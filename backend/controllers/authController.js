@@ -4,9 +4,9 @@ import userModel from '../models/userModel.js';
 import transporter from '../config/nodemailer.js';
 
 export const register = async (req, res) => {
-    const {name, email, password} = req.body;
+    const {name, email, password, role} = req.body;
 
-    if (!name || !email || !password) {
+    if (!name || !email || !password || !role) {
         return res.json({success: false, message: 'Please fill all the fields'});
     }
 
@@ -22,7 +22,8 @@ export const register = async (req, res) => {
         const user = new userModel({
             name,
             email,
-            password: hashedPassword
+            password: hashedPassword,
+            role
         });
         await user.save();
 
@@ -84,7 +85,16 @@ export const login = async (req, res) => {
             maxAge: 7 * 24 * 60 * 60 * 1000 // 7 day
         });
 
-        return res.json({success: true, message: 'Login successful'});
+        return res.json({
+            success: true, 
+            message: 'Login successful',
+            user: {
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                isAccountVerified: user.isAccountVerified
+            }
+        });
 
     } catch (error) {
         res.json({success: false, message: error.message});
@@ -172,11 +182,16 @@ export const verifyEmail = async (req, res) => {
             user.verifyOtpExpireAt = 0;
 
             await user.save();
-            return res.json({success: true, message: 'Account verified successfully'});
+            return res.json({
+                success: true, 
+                message: 'Account verified successfully',
+                user: {
+                    role: user.role
+                }
+            });
 
         } catch (error) {
             return res.json({success: false, message: error.message});
-            
         }
 }
 

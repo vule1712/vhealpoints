@@ -14,6 +14,11 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    role: {
+        type: String,
+        enum: ['Admin', 'Doctor', 'Patient'],
+        required: true
+    },
     verifyOtp: {
         type: String,
         default: ''

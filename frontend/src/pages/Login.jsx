@@ -16,6 +16,7 @@ const Login = () => {
     const [name, setName] = useState('')
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
+    const [role, setRole] = useState('Patient')
 
     const onSubmitHandler = async (e) => {
         try {
@@ -24,29 +25,59 @@ const Login = () => {
             axios.defaults.withCredentials = true // Allow cookies to be sent with requests
 
             if(state === 'Sign Up') {
-                const {data} = await axios.post(backendUrl + '/api/auth/register', {name, email, password}) // POST request to register user
+                const {data} = await axios.post(backendUrl + '/api/auth/register', {
+                    name, 
+                    email, 
+                    password,
+                    role
+                })
 
                 if(data.success) {
                     setIsLoggedIn(true)
-                    getUserData() // Fetch user data after successful registration
-                    navigate('/')
+                    getUserData()
+                    // Redirect based on role
+                    switch(role) {
+                        case 'Admin':
+                            navigate('/admin')
+                            break
+                        case 'Doctor':
+                            navigate('/doctor')
+                            break
+                        case 'Patient':
+                            navigate('/patient')
+                            break
+                        default:
+                            navigate('/')
+                    }
                 } else {
-                    toast.error(data.message) // Show error message if registration fails
+                    toast.error(data.message)
                 }
             } else { // Login state
-                const {data} = await axios.post(backendUrl + '/api/auth/login', {email, password}) // POST request to login user
+                const {data} = await axios.post(backendUrl + '/api/auth/login', {email, password})
 
                 if(data.success) {
                     setIsLoggedIn(true)
-                    getUserData() // Fetch user data after successful login
-                    navigate('/')
+                    getUserData()
+                    // Redirect based on user's role from the response
+                    switch(data.user.role) {
+                        case 'Admin':
+                            navigate('/admin')
+                            break
+                        case 'Doctor':
+                            navigate('/doctor')
+                            break
+                        case 'Patient':
+                            navigate('/patient')
+                            break
+                        default:
+                            navigate('/')
+                    }
                 } else {
-                    toast.error(data.message) // Show error message if login fails
+                    toast.error(data.message)
                 }
             }
         } catch (error) {
-            toast.error(error.message) // Show error message if login fails
-            
+            toast.error(error.message)
         }
     }
 
@@ -67,14 +98,37 @@ const Login = () => {
 
                 <form onSubmit={onSubmitHandler}>
                     {state === 'Sign Up' && (
-                        <div className='input-group'>
-                            <img src={assets.person_icon} />
-                            <input 
-                            onChange={e => setName(e.target.value)}
-                            value={name}
-                            className='input-field' 
-                            type="text" placeholder="Full Name" required />
-                        </div>
+                        <>
+                            <div className='input-group'>
+                                <img src={assets.person_icon} />
+                                <input 
+                                onChange={e => setName(e.target.value)}
+                                value={name}
+                                className='input-field' 
+                                type="text" placeholder="Full Name" required />
+                            </div>
+
+                            <div className='input-group'>
+                                <img src={assets.role_icon} className='w-4 h-4' />
+                                <select
+                                    onChange={e => setRole(e.target.value)}
+                                    value={role}
+                                    className='input-field'
+                                    required
+                                    style={{
+                                        appearance: 'none',
+                                        background: 'transparent',
+                                        backgroundColor: '#333A5C',
+                                        width: '100%',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    <option value="Patient">Patient</option>
+                                    <option value="Doctor">Doctor</option>
+                                    <option value="Admin">Admin</option>
+                                </select>
+                            </div>
+                        </>
                     )}
 
                     <div className='input-group'>

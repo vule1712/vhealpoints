@@ -8,6 +8,7 @@ import vHealPoints2 from './vHealPoints2.png'
 import vHealPoints1_trans from './vHealPoints1_trans.png'
 import vHealPoints2_trans from './vHealPoints2_trans.png'
 import doctor_char from './doctor-char.png'
+import role_icon from './role_icon.svg'
 
 export const assets = {
     arrow_icon,
@@ -19,5 +20,6 @@ export const assets = {
     vHealPoints2,
     vHealPoints1_trans,
     vHealPoints2_trans,
-    doctor_char
+    doctor_char,
+    role_icon
 }

@@ -47,7 +47,20 @@ const EmailVerify = () => {
             if(data.success) {
                 toast.success(data.message)
                 getUserData()
-                navigate('/')
+                // Redirect based on user's role
+                switch(data.user.role) {
+                    case 'Admin':
+                        navigate('/admin')
+                        break
+                    case 'Doctor':
+                        navigate('/doctor')
+                        break
+                    case 'Patient':
+                        navigate('/patient')
+                        break
+                    default:
+                        navigate('/')
+                }
             } else {
                 toast.error(data.message)
             }
@@ -57,7 +70,22 @@ const EmailVerify = () => {
     }
 
     useEffect(() => {
-        isLoggedIn && userData && userData.isAccountVerified && navigate('/')
+        if (isLoggedIn && userData && userData.isAccountVerified) {
+            // Redirect based on user's role
+            switch(userData.role) {
+                case 'Admin':
+                    navigate('/admin')
+                    break
+                case 'Doctor':
+                    navigate('/doctor')
+                    break
+                case 'Patient':
+                    navigate('/patient')
+                    break
+                default:
+                    navigate('/')
+            }
+        }
     }, [isLoggedIn, userData])
 
     return (
