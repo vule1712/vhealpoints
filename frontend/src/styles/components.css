@@ -1,0 +1,154 @@
+.header-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 5rem;
+    padding: 0 1rem;
+    text-align: center;
+    color: rgb(31 41 55);
+}
+
+.doctor-image {
+    width: 9rem;
+    height: 9rem;
+    border-radius: 9999px;
+    margin-bottom: 1.5rem;
+}
+
+.greeting {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.25rem;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+@media (min-width: 640px) {
+    .greeting {
+        font-size: 1.875rem;
+    }
+}
+
+.wave-icon {
+    width: 2rem;
+    aspect-ratio: 1;
+}
+
+.welcome-text {
+    font-size: 1.875rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+@media (min-width: 640px) {
+    .welcome-text {
+        font-size: 3rem;
+    }
+}
+
+.description {
+    margin-bottom: 2rem;
+    max-width: 28rem;
+}
+
+.get-started-button {
+    border: 1px solid rgb(107 114 128);
+    border-radius: 9999px;
+    padding: 0.625rem 2rem;
+    transition: all 0.2s;
+}
+
+.get-started-button:hover {
+    background-color: rgb(243 244 246);
+}
+
+/* NavBar Styles */
+.navbar {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    position: absolute;
+    top: 0;
+}
+
+@media (min-width: 640px) {
+    .navbar {
+        padding: 1.5rem 6rem;
+    }
+}
+
+.navbar-logo {
+    width: 7rem;
+}
+
+@media (min-width: 640px) {
+    .navbar-logo {
+        width: 8rem;
+    }
+}
+
+.user-avatar {
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 9999px;
+    background-color: black;
+    color: white;
+    position: relative;
+}
+
+.user-menu {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 10;
+    color: black;
+    border-radius: 0.25rem;
+    padding-top: 2.5rem;
+    display: none;
+}
+
+.user-avatar:hover .user-menu {
+    display: block;
+}
+
+.menu-list {
+    list-style: none;
+    margin: 0;
+    padding: 0.5rem;
+    background-color: rgb(243 244 246);
+    font-size: 0.875rem;
+}
+
+.menu-item {
+    padding: 0.25rem 0.5rem;
+    cursor: pointer;
+}
+
+.menu-item:hover {
+    background-color: rgb(229 231 235);
+}
+
+.menu-item.logout {
+    padding-right: 2.5rem;
+}
+
+.login-button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: 1px solid rgb(107 114 128);
+    border-radius: 9999px;
+    padding: 0.5rem 1.5rem;
+    color: rgb(31 41 55);
+    transition: all 0.2s;
+}
+
+.login-button:hover {
+    background-color: rgb(243 244 246);
+} 

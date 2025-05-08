@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import { AppContext } from '../context/AppContext'
 import axios from 'axios'
+import '../styles/auth.css'
 
 const EmailVerify = () => {
 
@@ -60,26 +61,26 @@ const EmailVerify = () => {
     }, [isLoggedIn, userData])
 
     return (
-        <div className='flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-blue-500 to-blue-100'>
+        <div className='auth-container'>
             <img onClick={()=>navigate('/')} 
                 src={assets.vHealPoints2_trans} 
-                className='absolute left-5 sm:left-20 top-5 w-28 sm:w-32 cursor-pointer' />
+                className='logo' />
             
-            <form onSubmit={onSubmitHandler} className='bg-slate-900 p-10 rounded-lg shadow-lg w-96 text-sm'>
-                <h1 className='text-white text-2xl font-semibold text-center mb-4'>Email Verify OTP</h1>
-                <p className='text-center mb-6 text-indigo-300'>Enter the 6-digit code sent to your email.</p>
+            <form onSubmit={onSubmitHandler} className='auth-form'>
+                <h1 className='auth-title'>Email Verify OTP</h1>
+                <p className='auth-subtitle'>Enter the 6-digit code sent to your email.</p>
 
-                <div className='flex justify-between mb-8' onPaste={handlePaste}>
+                <div className='otp-container' onPaste={handlePaste}>
                     {Array(6).fill(0).map((_, index) => (
                         <input key={index} type="text" maxLength={1} required
-                        className='w-12 h-12 text-center text-xl text-white bg-[#333A5C] rounded-md'
+                        className='otp-input'
                         ref={e => inputRefs.current[index] = e}
                         onInput={(e) => handleInput(e, index)}
                         onKeyDown={(e) => handleKeyDown(e, index)}
                         />
                     ))}
                 </div>
-                <button className='w-full py-3 bg-gradient-to-r from-indigo-500 to-indigo-900 text-white rounded-full'>
+                <button className='submit-button'>
                     Verify Email
                 </button>
             </form>
