@@ -8,7 +8,7 @@ A place that allows you to find doctors and make appointments online!
 - [x] Email Verification 
 - [x] Forgot Password/ Change Password
 - [ ] Login with Google OAuth 2.0
-- [ ] User Role
+- [x] User Role
 - [ ] Admin Dashboard
 - [ ] Doctor Dashboard
 - [ ] Customer Dashboard
