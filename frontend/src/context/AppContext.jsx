@@ -28,9 +28,18 @@ export const AppContextProvider = (props) => {
     const getUserData = async() => {
         try {
             const {data} = await axios.get(backendUrl + '/api/user/data')
-            data.success ? setUserData(data.userData) : toast.error(data.message)
+            if (data.success) {
+                console.log('User data received:', data.userData)
+                setUserData(data.userData)
+                return data.userData
+            } else {
+                toast.error(data.message)
+                return null
+            }
         } catch (error) {
-            toast.error(data.message)
+            console.error('Error getting user data:', error)
+            toast.error(error.message || 'Failed to get user data')
+            return null
         }
     }
 

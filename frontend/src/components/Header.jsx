@@ -25,7 +25,29 @@ const Header = () => {
                 vHealPoints is a platform that helps you find doctors and book appointments online.
             </p>
 
-            <button onClick={() => navigate('/login')} className='get-started-button'>
+            <button onClick={() => {
+                console.log('Current user data:', userData)
+                if (userData && userData.role) {
+                    console.log('Navigating to role-specific page for role:', userData.role)
+                    switch(userData.role) {
+                        case 'Admin':
+                            navigate('/admin')
+                            break
+                        case 'Doctor':
+                            navigate('/doctor')
+                            break
+                        case 'Patient':
+                            navigate('/patient')
+                            break
+                        default:
+                            console.log('No specific role found, navigating to home')
+                            navigate('/')
+                    }
+                } else {
+                    console.log('No valid user data or role, navigating to login')
+                    navigate('/login')
+                }
+            }} className='get-started-button'>
                 Let's get started!
             </button>
         </div>

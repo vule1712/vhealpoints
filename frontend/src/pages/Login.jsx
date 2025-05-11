@@ -34,21 +34,9 @@ const Login = () => {
 
                 if(data.success) {
                     setIsLoggedIn(true)
-                    getUserData()
-                    // Redirect based on role
-                    switch(role) {
-                        case 'Admin':
-                            navigate('/admin')
-                            break
-                        case 'Doctor':
-                            navigate('/doctor')
-                            break
-                        case 'Patient':
-                            navigate('/patient')
-                            break
-                        default:
-                            navigate('/')
-                    }
+                    const userData = await getUserData()
+                    console.log('Signup - User data received:', userData)
+                    navigate('/')
                 } else {
                     toast.error(data.message)
                 }
@@ -57,21 +45,9 @@ const Login = () => {
 
                 if(data.success) {
                     setIsLoggedIn(true)
-                    getUserData()
-                    // Redirect based on user's role from the response
-                    switch(data.user.role) {
-                        case 'Admin':
-                            navigate('/admin')
-                            break
-                        case 'Doctor':
-                            navigate('/doctor')
-                            break
-                        case 'Patient':
-                            navigate('/patient')
-                            break
-                        default:
-                            navigate('/')
-                    }
+                    const userData = await getUserData()
+                    console.log('Login - User data received:', userData)
+                    navigate('/')
                 } else {
                     toast.error(data.message)
                 }

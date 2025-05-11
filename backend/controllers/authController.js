@@ -41,7 +41,7 @@ export const register = async (req, res) => {
             from: process.env.SENDER_EMAIL,
             to: email,
             subject: 'Welcome to vHealPoints!',
-            text:   `Hello ${name}!,
+            text:   `Hello ${name}!
                     \n\nWelcome to vHealPoints! We are glad to have you on board.
                     \n\nYour account has been successfully created with email: ${email}.
                     \n\nBest regards,\nvHealPoints Team`
