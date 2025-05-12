@@ -21,7 +21,7 @@ export const AppContextProvider = (props) => {
                 getUserData()
             }
         } catch (error) {
-            toast.error(data.message)
+            toast.error(error.response?.data?.message || 'Authentication failed')
         }
     }
     
@@ -38,7 +38,7 @@ export const AppContextProvider = (props) => {
             }
         } catch (error) {
             console.error('Error getting user data:', error)
-            toast.error(error.message || 'Failed to get user data')
+            toast.error(error.response?.data?.message || 'Failed to get user data')
             return null
         }
     }

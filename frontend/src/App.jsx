@@ -4,7 +4,9 @@ import Home from './pages/Home'
 import Login from './pages/Login'
 import EmailVerify from './pages/EmailVerify'
 import ResetPassword from './pages/ResetPassword'
-import AdminHome from './pages/AdminHome'
+import AdminDashboard from './pages/admin/AdminDashboard'
+import UserListPage from './pages/admin/UserListPage'
+import AdminLayout from './components/layouts/AdminLayout'
 import DoctorHome from './pages/DoctorHome'
 import PatientHome from './pages/PatientHome'
 import { ToastContainer } from 'react-toastify';
@@ -19,7 +21,13 @@ const App = () => {
         <Route path='/login' element={<Login/>}/>
         <Route path='/email-verify' element={<EmailVerify/>}/>
         <Route path='/reset-password' element={<ResetPassword/>}/>
-        <Route path='/admin' element={<AdminHome/>}/>
+        
+        {/* Admin Routes */}
+        <Route path='/admin' element={<AdminLayout/>}>
+          <Route index element={<AdminDashboard/>}/>
+          <Route path='users' element={<UserListPage/>}/>
+        </Route>
+
         <Route path='/doctor' element={<DoctorHome/>}/>
         <Route path='/patient' element={<PatientHome/>}/>
       </Routes>
