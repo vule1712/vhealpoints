@@ -12,7 +12,7 @@ const AdminLayout = () => {
     return (
         <div className="min-h-screen bg-gray-100">
             <NavBar />
-            <div className="flex h-[calc(100vh-64px)] pt-[82px]">
+            <div className="flex h-[100vh] pt-[82px]">
                 {/* Side Menu */}
                 <div className="w-64 bg-white shadow-lg">
                     <nav className="mt-4">
