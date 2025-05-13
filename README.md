@@ -40,7 +40,7 @@
 
 ### Frontend
 - React.js
-- Tailwind CSS
+- CSS + Tailwind CSS
 
 ### Backend
 - Node.js
