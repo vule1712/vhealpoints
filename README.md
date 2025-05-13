@@ -1,4 +1,4 @@
-## vHealPoint
+## vHealPoint🩺
 A place that allows you to find doctors and make appointments online!
 
 ## Functions:
