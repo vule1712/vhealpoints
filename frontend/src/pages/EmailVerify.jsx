@@ -12,7 +12,7 @@ const EmailVerify = () => {
     const {backendUrl, isLoggedIn, userData, getUserData} = useContext(AppContext)
     const navigate = useNavigate()
 
-    const inputRefs = React.useRef([])
+    const inputRefs = React.useRef([]) // Ref to keep track of each OTP input box
     
     const handleInput = (e, index) => {
         if(e.target.value.length > 0 && index < inputRefs.current.length - 1) {
@@ -46,7 +46,7 @@ const EmailVerify = () => {
 
             if(data.success) {
                 toast.success(data.message)
-                getUserData()
+                getUserData() // Refresh user data after verification
                 // Redirect based on user's role
                 switch(data.user.role) {
                     case 'Admin':
@@ -69,9 +69,9 @@ const EmailVerify = () => {
         }
     }
 
+    // Redirect if user is already logged in and verified
     useEffect(() => {
         if (isLoggedIn && userData && userData.isAccountVerified) {
-            // Redirect based on user's role
             switch(userData.role) {
                 case 'Admin':
                     navigate('/admin')

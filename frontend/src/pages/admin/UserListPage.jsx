@@ -10,6 +10,7 @@ const UserListPage = () => {
     const [error, setError] = useState(null);
     const {backendUrl} = useContext(AppContext);
 
+    // Fetch user list from the backend
     useEffect(() => {
         const fetchUsers = async () => {
             try {
@@ -48,6 +49,7 @@ const UserListPage = () => {
     }
 
     return (
+        // Main user list layout
         <div>
             <h1 className="admin-page-title">User List</h1>
             <div className="admin-card">

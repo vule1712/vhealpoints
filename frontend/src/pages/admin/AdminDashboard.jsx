@@ -13,6 +13,7 @@ const AdminDashboard = () => {
     const [loading, setLoading] = useState(true);
     const { backendUrl } = useContext(AppContext);
 
+    // Fetch dashboard statistics
     useEffect(() => {
         const fetchStats = async () => {
             try {
@@ -40,6 +41,7 @@ const AdminDashboard = () => {
     }
 
     return (
+        // Main admin dashboard layout
         <div>
             <div className="mb-8">
                 <h1 className="admin-page-title">Admin Dashboard</h1>

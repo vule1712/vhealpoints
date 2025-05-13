@@ -25,6 +25,7 @@ const Header = () => {
                 vHealPoints is a platform that helps you find doctors and book appointments online.
             </p>
 
+            {/* Button to navigate to role-specific page */}
             <button onClick={() => {
                 console.log('Current user data:', userData)
                 if (userData && userData.role) {
