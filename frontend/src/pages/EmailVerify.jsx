@@ -1,4 +1,4 @@
-import React, { useContext, useEffect } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 import { assets } from '../assets/assets'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
@@ -7,10 +7,11 @@ import axios from 'axios'
 import '../styles/auth.css'
 
 const EmailVerify = () => {
-
     axios.defaults.withCredentials = true // Allow cookies to be sent with requests
     const {backendUrl, isLoggedIn, userData, getUserData} = useContext(AppContext)
     const navigate = useNavigate()
+    const [resendDisabled, setResendDisabled] = useState(false)
+    const [countdown, setCountdown] = useState(0)
 
     const inputRefs = React.useRef([]) // Ref to keep track of each OTP input box
     
@@ -36,6 +37,21 @@ const EmailVerify = () => {
         })
     }
 
+    const handleResendOtp = async () => {
+        try {
+            const {data} = await axios.post(backendUrl + '/api/auth/send-verify-otp')
+            if(data.success) {
+                toast.success(data.message)
+                setResendDisabled(true)
+                setCountdown(60) // Start 60 second countdown
+            } else {
+                toast.error(data.message)
+            }
+        } catch (error) {
+            toast.error(error.message)
+        }
+    }
+
     const onSubmitHandler = async(e) => {
         try {
             e.preventDefault();
@@ -46,20 +62,22 @@ const EmailVerify = () => {
 
             if(data.success) {
                 toast.success(data.message)
-                getUserData() // Refresh user data after verification
+                const updatedUserData = await getUserData() // Refresh user data after verification
                 // Redirect based on user's role
-                switch(data.user.role) {
-                    case 'Admin':
-                        navigate('/admin')
-                        break
-                    case 'Doctor':
-                        navigate('/doctor')
-                        break
-                    case 'Patient':
-                        navigate('/patient')
-                        break
-                    default:
-                        navigate('/')
+                if (updatedUserData.isAccountVerified) {
+                    switch(updatedUserData.role) {
+                        case 'Admin':
+                            navigate('/admin')
+                            break
+                        case 'Doctor':
+                            navigate('/doctor')
+                            break
+                        case 'Patient':
+                            navigate('/patient')
+                            break
+                        default:
+                            navigate('/')
+                    }
                 }
             } else {
                 toast.error(data.message)
@@ -69,9 +87,51 @@ const EmailVerify = () => {
         }
     }
 
-    // Redirect if user is already logged in and verified
+    // Send OTP automatically when component mounts
     useEffect(() => {
-        if (isLoggedIn && userData && userData.isAccountVerified) {
+        const sendInitialOtp = async () => {
+            try {
+                const {data} = await axios.post(backendUrl + '/api/auth/send-verify-otp')
+                if(data.success) {
+                    toast.success(data.message)
+                    setResendDisabled(true)
+                    setCountdown(60)
+                } else {
+                    toast.error(data.message)
+                }
+            } catch (error) {
+                toast.error(error.message)
+            }
+        }
+
+        if (isLoggedIn && !userData?.isAccountVerified) {
+            sendInitialOtp()
+        }
+    }, [isLoggedIn, userData])
+
+    // Countdown timer effect
+    useEffect(() => {
+        let timer;
+        if (countdown > 0) {
+            timer = setInterval(() => {
+                setCountdown(prev => prev - 1)
+            }, 1000)
+        } else {
+            setResendDisabled(false)
+        }
+        return () => clearInterval(timer)
+    }, [countdown])
+
+    // Redirect if user is not logged in
+    useEffect(() => {
+        if (!isLoggedIn) {
+            navigate('/login')
+        }
+    }, [isLoggedIn])
+
+    // Redirect if user is already verified
+    useEffect(() => {
+        if (userData && userData.isAccountVerified) {
             switch(userData.role) {
                 case 'Admin':
                     navigate('/admin')
@@ -86,7 +146,7 @@ const EmailVerify = () => {
                     navigate('/')
             }
         }
-    }, [isLoggedIn, userData])
+    }, [userData])
 
     return (
         <div className='auth-container'>
@@ -111,6 +171,17 @@ const EmailVerify = () => {
                 <button className='submit-button'>
                     Verify Email
                 </button>
+                <div className='resend-otp-container'>
+                    <p className='auth-subtitle'>Didn't receive the code?</p>
+                    <button 
+                        type='button'
+                        onClick={handleResendOtp}
+                        disabled={resendDisabled}
+                        className='resend-button'
+                    >
+                        {resendDisabled ? `Resend in ${countdown}s` : 'Resend OTP'}
+                    </button>
+                </div>
             </form>
         </div>
     )

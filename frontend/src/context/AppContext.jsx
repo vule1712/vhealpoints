@@ -5,13 +5,12 @@ import { toast } from "react-toastify";
 export const AppContext = createContext()
 
 export const AppContextProvider = (props) => {
-
     axios.defaults.withCredentials = true // Allow cookies to be sent with requests
 
     const backendUrl = import.meta.env.VITE_BACKEND_URL // Access backend base URL from .env
     const [isLoggedIn, setIsLoggedIn] = useState(false)
-    const [userData, setUserData] = useState(false)
-
+    const [userData, setUserData] = useState(null)
+    const [isLoading, setIsLoading] = useState(true)
 
     // Check if the user is logged in and fetch user data
     const getAuthState = async() => {
@@ -20,10 +19,17 @@ export const AppContextProvider = (props) => {
             
             if(data.success) {
                 setIsLoggedIn(true)
-                getUserData()
+                await getUserData()
+            } else {
+                setIsLoggedIn(false)
+                setUserData(null)
             }
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Authentication failed')
+            console.error('Auth check failed:', error)
+            setIsLoggedIn(false)
+            setUserData(null)
+        } finally {
+            setIsLoading(false)
         }
     }
     
@@ -32,7 +38,6 @@ export const AppContextProvider = (props) => {
         try {
             const {data} = await axios.get(backendUrl + '/api/user/data')
             if (data.success) {
-                console.log('User data received:', data.userData)
                 setUserData(data.userData)
                 return data.userData
             } else {
@@ -46,15 +51,33 @@ export const AppContextProvider = (props) => {
         }
     }
 
+    // Logout function
+    const logout = async () => {
+        try {
+            await axios.post(backendUrl + '/api/auth/logout')
+            setIsLoggedIn(false)
+            setUserData(null)
+            toast.success('Logged out successfully')
+        } catch (error) {
+            console.error('Logout failed:', error)
+            toast.error('Failed to logout')
+        }
+    }
+
+    // Check auth state on mount and when backendUrl changes
     useEffect(() => {
         getAuthState()
-    }, [])
+    }, [backendUrl])
 
     const value = {
         backendUrl,
-        isLoggedIn, setIsLoggedIn,
-        userData, setUserData,
-        getUserData
+        isLoggedIn,
+        setIsLoggedIn,
+        userData,
+        setUserData,
+        getUserData,
+        logout,
+        isLoading
     }
 
     return(

@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react'
+import React, { useContext, useState, useEffect } from 'react'
 import { assets } from '../assets/assets'
 import { useNavigate } from 'react-router-dom'
 import { AppContext } from '../context/AppContext'
@@ -7,18 +7,17 @@ import { toast } from 'react-toastify'
 import '../styles/auth.css'
 
 const ResetPassword = () => {
-
     const {backendUrl} = useContext(AppContext)
     axios.defaults.withCredentials = true // Allow cookies to be sent with requests
 
     const navigate = useNavigate()
     const [email, setEmail] = useState('')
     const [newPassword, setNewPassword] = useState('')
-
-    const [isEmailSent, setIsEmailSent] = useState('')
+    const [isEmailSent, setIsEmailSent] = useState(false)
     const [otp, setOtp] = useState(0)
     const [isOtpSubmitted, setIsOtpSubmitted] = useState(false)
-
+    const [resendDisabled, setResendDisabled] = useState(false)
+    const [countdown, setCountdown] = useState(0)
 
     const inputRefs = React.useRef([])
 
@@ -44,6 +43,21 @@ const ResetPassword = () => {
         })
     }
 
+    const handleResendOtp = async () => {
+        try {
+            const {data} = await axios.post(backendUrl + '/api/auth/send-reset-otp', {email})
+            if(data.success) {
+                toast.success(data.message)
+                setResendDisabled(true)
+                setCountdown(60) // Start 60 second countdown
+            } else {
+                toast.error(data.message)
+            }
+        } catch (error) {
+            toast.error(error.message)
+        }
+    }
+
     const onSubmitEmail = async(e) => {
         e.preventDefault();
 
@@ -51,6 +65,8 @@ const ResetPassword = () => {
             const {data} = await axios.post(backendUrl + '/api/auth/send-reset-otp', {email}) // POST request to send OTP to email
             data.success ? toast.success(data.message) : toast.error(data.message)
             data.success && setIsEmailSent(true)
+            data.success && setResendDisabled(true)
+            data.success && setCountdown(60)
         } catch (error) {
             toast.error(error.message)
         }
@@ -75,6 +91,19 @@ const ResetPassword = () => {
             toast.error(error.message)
         }
     }
+
+    // Countdown timer effect
+    useEffect(() => {
+        let timer;
+        if (countdown > 0) {
+            timer = setInterval(() => {
+                setCountdown(prev => prev - 1)
+            }, 1000)
+        } else {
+            setResendDisabled(false)
+        }
+        return () => clearInterval(timer)
+    }, [countdown])
 
     return (
         <div className='auth-container'>
@@ -118,6 +147,17 @@ const ResetPassword = () => {
                     <button className='submit-button'>
                         Reset Password
                     </button>
+                    <div className='resend-otp-container'>
+                        <p className='auth-subtitle'>Didn't receive the code?</p>
+                        <button 
+                            type='button'
+                            onClick={handleResendOtp}
+                            disabled={resendDisabled}
+                            className='resend-button'
+                        >
+                            {resendDisabled ? `Resend in ${countdown}s` : 'Resend OTP'}
+                        </button>
+                    </div>
                 </form>
             }
 

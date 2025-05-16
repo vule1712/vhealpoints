@@ -20,7 +20,15 @@ const AdminDashboard = () => {
                 const response = await axios.get(backendUrl + '/api/admin/stats', {
                     withCredentials: true
                 });
-                setStats(response.data);
+                if (response.data.success) {
+                    setStats({
+                        totalUsers: response.data.stats.totalUsers || 0,
+                        verifiedUsers: response.data.stats.verifiedUsers || 0,
+                        pendingVerifications: response.data.stats.totalUsers - response.data.stats.verifiedUsers || 0
+                    });
+                } else {
+                    toast.error(response.data.message || 'Failed to load dashboard statistics');
+                }
             } catch (error) {
                 console.error('Error fetching dashboard stats:', error);
                 toast.error('Failed to load dashboard statistics');

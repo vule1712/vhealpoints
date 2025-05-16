@@ -55,6 +55,7 @@ const NavBar = () => {
                             Verify Email
                         </li>
                         }
+                        <li onClick={() => navigate('/profile')} className='menu-item'>Profile</li>
                         <li onClick={logout} className='menu-item logout'>Logout</li>
                     </ul>
                 </div>

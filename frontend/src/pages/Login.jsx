@@ -16,7 +16,7 @@ const Login = () => {
     const [name, setName] = useState('')
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
-    const [role, setRole] = useState('Patient')
+    const [role] = useState('Patient')
 
     const onSubmitHandler = async (e) => {
         try {
@@ -36,7 +36,12 @@ const Login = () => {
                     setIsLoggedIn(true)
                     const userData = await getUserData()
                     console.log('Signup - User data received:', userData)
-                    navigate('/')
+                    // Redirect to email verification if not verified
+                    if (!userData.isAccountVerified) {
+                        navigate('/email-verify')
+                    } else {
+                        navigate('/')
+                    }
                 } else {
                     toast.error(data.message)
                 }
@@ -47,7 +52,12 @@ const Login = () => {
                     setIsLoggedIn(true)
                     const userData = await getUserData()
                     console.log('Login - User data received:', userData)
-                    navigate('/')
+                    // Redirect to email verification if not verified
+                    if (!userData.isAccountVerified) {
+                        navigate('/email-verify')
+                    } else {
+                        navigate('/')
+                    }
                 } else {
                     toast.error(data.message)
                 }
@@ -74,37 +84,14 @@ const Login = () => {
 
                 <form onSubmit={onSubmitHandler}>
                     {state === 'Sign Up' && (
-                        <>
-                            <div className='input-group'>
-                                <img src={assets.person_icon} />
-                                <input 
-                                onChange={e => setName(e.target.value)}
-                                value={name}
-                                className='input-field' 
-                                type="text" placeholder="Full Name" required />
-                            </div>
-
-                            <div className='input-group'>
-                                <img src={assets.role_icon} className='w-4 h-4' />
-                                <select
-                                    onChange={e => setRole(e.target.value)}
-                                    value={role}
-                                    className='input-field'
-                                    required
-                                    style={{
-                                        appearance: 'none',
-                                        background: 'transparent',
-                                        backgroundColor: '#333A5C',
-                                        width: '100%',
-                                        cursor: 'pointer'
-                                    }}
-                                >
-                                    <option value="Patient">Patient</option>
-                                    <option value="Doctor">Doctor</option>
-                                    <option value="Admin">Admin</option>
-                                </select>
-                            </div>
-                        </>
+                        <div className='input-group'>
+                            <img src={assets.person_icon} />
+                            <input 
+                            onChange={e => setName(e.target.value)}
+                            value={name}
+                            className='input-field' 
+                            type="text" placeholder="Full Name" required />
+                        </div>
                     )}
 
                     <div className='input-group'>

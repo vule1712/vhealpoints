@@ -118,4 +118,29 @@
     color: #60a5fa;
     cursor: pointer;
     text-decoration: underline;
+}
+
+.resend-otp-container {
+    margin-top: 1rem;
+    text-align: center;
+}
+
+.resend-button {
+    background: none;
+    border: none;
+    color: #60a5fa;
+    cursor: pointer;
+    font-size: 0.875rem;
+    padding: 0.25rem 0.5rem;
+    transition: color 0.2s;
+}
+
+.resend-button:hover:not(:disabled) {
+    color: #3b82f6;
+    text-decoration: underline;
+}
+
+.resend-button:disabled {
+    color: #9ca3af;
+    cursor: not-allowed;
 } 
