@@ -167,7 +167,7 @@ export const getUserById = async (req, res) => {
 
         res.status(200).json({
             success: true,
-            user
+            userData: user
         });
     } catch (error) {
         console.error('Error fetching user details:', error);

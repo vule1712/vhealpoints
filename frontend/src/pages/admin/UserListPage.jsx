@@ -116,7 +116,7 @@ const UserListPage = () => {
                             <tr>
                                 <th className="admin-table-header-cell">No.</th>
                                 <th className="admin-table-header-cell">User Name</th>
-                                <th className="admin-table-header-cell">Email</th>
+                                <th className="admin-table-header-cell">Contact Email</th>
                                 <th className="admin-table-header-cell">Role</th>
                                 <th className="admin-table-header-cell">Auth Status</th>
                             </tr>

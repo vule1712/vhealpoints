@@ -19,6 +19,56 @@ const userSchema = new mongoose.Schema({
         enum: ['Admin', 'Doctor', 'Patient'],
         required: true
     },
+    
+    // Doctor specific fields
+    specialization: {
+        type: String,
+        required: function() {
+            return this.role === 'Doctor';
+        }
+    },
+    clinicName: {
+        type: String,
+        required: function() {
+            return this.role === 'Doctor';
+        }
+    },
+    clinicAddress: {
+        type: String,
+        required: function() {
+            return this.role === 'Doctor';
+        }
+    },
+
+    // Patient specific fields
+    bloodType: {
+        type: String,
+        enum: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'],
+        required: function() {
+            return this.role === 'Patient';
+        }
+    },
+    medicalHistory: {
+        type: [{
+            condition: {
+                type: String,
+                required: true
+            },
+            diagnosisDate: {
+                type: Date,
+                required: true
+            },
+            status: {
+                type: String,
+                enum: ['Active', 'Resolved', 'Chronic'],
+                required: true
+            },
+            notes: String
+        }],
+        default: function() {
+            return this.role === 'Patient' ? [] : undefined;
+        }
+    },
     verifyOtp: {
         type: String,
         default: ''

@@ -11,7 +11,7 @@ const AdminDashboard = () => {
         pendingVerifications: 0
     });
     const [loading, setLoading] = useState(true);
-    const { backendUrl } = useContext(AppContext);
+    const { backendUrl, userData } = useContext(AppContext);
 
     // Fetch dashboard statistics
     useEffect(() => {
@@ -49,11 +49,10 @@ const AdminDashboard = () => {
     }
 
     return (
-        // Main admin dashboard layout
         <div>
-            <div className="mb-8">
-                <h1 className="admin-page-title">Admin Dashboard</h1>
-                <p className="admin-page-description">Welcome to the admin dashboard. Here you can manage users, doctors, and patients.</p>
+            <div className="flex justify-between items-center mb-8">
+                <h1 className="text-2xl font-bold text-gray-800">Welcome, Admin {userData?.name}</h1>
+                <p className="text-gray-600">{new Date().toLocaleDateString()}</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
