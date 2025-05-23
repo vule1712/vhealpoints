@@ -1,4 +1,5 @@
 import userModel from "../models/userModel.js";
+import appointmentModel from "../models/appointmentModel.js";
 
 export const getUserData = async(req, res) => {
     try {
@@ -33,9 +34,62 @@ export const getAllPatients = async(req, res) => {
     }
 }
 
+export const getDoctorPatients = async(req, res) => {
+    try {
+        const doctorId = req.user.userId;
+
+        // Get all appointments for this doctor
+        const appointments = await appointmentModel.find({ doctorId })
+            .populate('patientId', 'name email bloodType')
+            .select('patientId status');
+
+        // Get unique patients who have appointments with this doctor
+        const uniquePatients = appointments.reduce((acc, appointment) => {
+            const patientId = appointment.patientId._id.toString();
+            if (!acc[patientId]) {
+                acc[patientId] = {
+                    ...appointment.patientId.toObject(),
+                    appointmentCount: 1,
+                    lastAppointmentStatus: appointment.status
+                };
+            } else {
+                acc[patientId].appointmentCount++;
+                acc[patientId].lastAppointmentStatus = appointment.status;
+            }
+            return acc;
+        }, {});
+
+        const patients = Object.values(uniquePatients);
+        
+        res.json({
+            success: true,
+            patients
+        });
+    } catch (error) {
+        return res.json({success: false, message: error.message});
+    }
+}
+
 export const getTotalPatients = async(req, res) => {
     try {
         const count = await userModel.countDocuments({ role: 'Patient' });
+        
+        res.json({
+            success: true,
+            count
+        });
+    } catch (error) {
+        return res.json({success: false, message: error.message});
+    }
+}
+
+export const getDoctorTotalPatients = async(req, res) => {
+    try {
+        const doctorId = req.user.userId;
+        
+        // Get count of unique patients who have appointments with this doctor
+        const uniquePatients = await appointmentModel.distinct('patientId', { doctorId });
+        const count = uniquePatients.length;
         
         res.json({
             success: true,

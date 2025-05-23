@@ -20,6 +20,11 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { AppContext } from './context/AppContext';
 import Profile from './pages/Profile'
+import DoctorAppointments from './pages/doctor/DoctorAppointments'
+import DoctorAppointmentHistory from './pages/doctor/DoctorAppointmentHistory'
+import BookAppointment from './pages/patient/BookAppointment'
+import ManageSlots from './pages/doctor/ManageSlots'
+import PatientAppointments from './pages/patient/PatientAppointments'
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
@@ -99,8 +104,16 @@ const App = () => {
           </ProtectedRoute>
         }>
           <Route index element={<AdminDashboard/>}/>
-          <Route path='users' element={<ProtectedRoute><UserListPage /></ProtectedRoute>} />
-          <Route path='user-profile/:userId' element={<ProtectedRoute><UserProfilePage /></ProtectedRoute>} />
+          <Route path='users' element={
+            <ProtectedRoute>
+              <UserListPage />
+            </ProtectedRoute>
+          } />
+          <Route path='user-profile/:userId' element={
+            <ProtectedRoute>
+              <UserProfilePage />
+            </ProtectedRoute>
+          } />
         </Route>
 
         <Route path='/profile' element={
@@ -117,6 +130,9 @@ const App = () => {
           <Route index element={<Navigate to="/doctor/dashboard" replace />} />
           <Route path='dashboard' element={<DoctorDashboard />} />
           <Route path='patients' element={<PatientList />} />
+          <Route path='appointments' element={<DoctorAppointments />} />
+          <Route path='appointment-history' element={<DoctorAppointmentHistory />} />
+          <Route path='slots' element={<ManageSlots />} />
         </Route>
 
         <Route path='/patient' element={
@@ -128,6 +144,8 @@ const App = () => {
           <Route path='dashboard' element={<PatientDashboard />} />
           <Route path='doctors' element={<DoctorList />} />
           <Route path='doctor/:doctorId' element={<DoctorProfile />} />
+          <Route path='book-appointment/:doctorId' element={<BookAppointment />} />
+          <Route path='appointments' element={<PatientAppointments />} />
         </Route>
 
         {/* Catch all route */}

@@ -21,7 +21,8 @@ const userAuth = async (req, res, next) => {
             // Add user data to request
             req.user = { 
                 userId: tokenDecode.id,
-                isVerified: user.isAccountVerified
+                isVerified: user.isAccountVerified,
+                role: user.role
             };
         } else {
             return res.json({success: false, message: 'Unauthorized. Please login again'});
@@ -71,4 +72,30 @@ const adminAuth = async (req, res, next) => {
     }
 }
 
-export { userAuth, adminAuth };
+const doctorAuth = async (req, res, next) => {
+    try {
+        // Check if user and role exist
+        if (!req.user || !req.user.role) {
+            return res.json({
+                success: false,
+                message: 'User role not found'
+            });
+        }
+
+        if (req.user.role !== 'Doctor') {
+            return res.json({
+                success: false,
+                message: 'Not authorized as doctor'
+            });
+        }
+        next();
+    } catch (error) {
+        console.error('Error in doctorAuth middleware:', error);
+        res.json({
+            success: false,
+            message: 'Not authorized as doctor'
+        });
+    }
+}
+
+export { userAuth, adminAuth, doctorAuth };

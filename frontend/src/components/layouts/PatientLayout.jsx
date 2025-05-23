@@ -13,7 +13,7 @@ const PatientLayout = () => {
     ];
 
     return (
-        <div className="bg-gray-100 flex h-[100vh] pt-[82px]">
+        <div className="bg-gray-100 flex h-[100vh] pt-[82px] relative">
             <NavBar />
             {/* Sidebar */}
             <div className="w-64 bg-white shadow-lg">

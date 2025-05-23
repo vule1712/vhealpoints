@@ -13,7 +13,7 @@ const PatientList = () => {
     // Fetch patient list from the backend
     const fetchPatients = async () => {
         try {
-            const response = await axios.get(backendUrl + '/api/user/patient', {
+            const response = await axios.get(`${backendUrl}/api/user/doctor-patients`, {
                 withCredentials: true
             });
             if (response.data.success) {
@@ -68,6 +68,8 @@ const PatientList = () => {
                                 <th className="admin-table-header-cell">Patient Name</th>
                                 <th className="admin-table-header-cell">Contact Email</th>
                                 <th className="admin-table-header-cell">Blood Type</th>
+                                <th className="admin-table-header-cell">Total Appointments</th>
+                                <th className="admin-table-header-cell">Last Appointment Status</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -84,6 +86,18 @@ const PatientList = () => {
                                             patient.bloodType ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
                                         }`}>
                                             {patient.bloodType || 'Not Set'}
+                                        </span>
+                                    </td>
+                                    <td className="admin-table-cell">{patient.appointmentCount || 0}</td>
+                                    <td className="admin-table-cell">
+                                        <span className={`px-2 py-1 rounded-full text-sm ${
+                                            patient.lastAppointmentStatus === 'Completed' ? 'bg-blue-100 text-blue-800' :
+                                            patient.lastAppointmentStatus === 'Confirmed' ? 'bg-green-100 text-green-800' :
+                                            patient.lastAppointmentStatus === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                                            patient.lastAppointmentStatus === 'Canceled' ? 'bg-red-100 text-red-800' :
+                                            'bg-gray-100 text-gray-800'
+                                        }`}>
+                                            {patient.lastAppointmentStatus || 'No appointments'}
                                         </span>
                                     </td>
                                 </tr>

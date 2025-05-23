@@ -30,7 +30,7 @@
   - Book appointments, view history, manage personal info
 
 ### 🗓️ Clinic Management
-- [ ] Book Appointments
+- [x] Book Appointments
 - [ ] Create Invoices
 - [ ] View Medical & Payment History
 

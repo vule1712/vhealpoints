@@ -8,12 +8,14 @@ const DoctorLayout = () => {
     const menuItems = [
         { title: 'Dashboard', path: '/doctor/dashboard', icon: '📊' },
         { title: 'Appointments', path: '/doctor/appointments', icon: '📅' },
+        { title: 'Slots Management', path: '/doctor/slots', icon: '⏰' },
         { title: 'Patients', path: '/doctor/patients', icon: '👥' },
+        { title: 'Appointment History', path: '/doctor/appointment-history', icon: '🕔' },
         { title: 'Prescriptions', path: '/doctor/prescriptions', icon: '💊' }
     ];
 
     return (
-        <div className=" bg-gray-100 flex h-[100vh] pt-[82px]">
+        <div className="bg-gray-100 flex h-[100vh] pt-[82px] relative">
             <NavBar />
             {/* Sidebar */}
             <div className="w-64 bg-white shadow-lg">

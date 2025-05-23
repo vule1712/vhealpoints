@@ -43,7 +43,7 @@ const NavBar = () => {
 
     return (
         <div className='navbar'>
-                <img onClick={() => navigate('/')} src={assets.vHealPoints2} alt="" className='navbar-logo' />
+                <img onClick={() => navigate('/')} src={assets.vHealPoints3} alt="" className='navbar-logo' />
             {userData ?
             <div className='user-avatar'>
                 {userData.name[0].toUpperCase()}

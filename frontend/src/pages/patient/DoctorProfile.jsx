@@ -40,8 +40,7 @@ const DoctorProfile = () => {
     }, [doctorId, backendUrl]);
 
     const handleBookAppointment = () => {
-        // TODO: Implement appointment booking functionality
-        toast.info('Appointment booking feature coming soon!');
+        navigate(`/patient/book-appointment/${doctorId}`);
     };
 
     if (loading) {
