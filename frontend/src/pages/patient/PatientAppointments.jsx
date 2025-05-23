@@ -211,14 +211,7 @@ const PatientAppointments = () => {
                                             {appointment.status}
                                         </span>
                                         {(appointment.status === 'Confirmed' || appointment.status === 'Pending') && 
-                                        new Date(appointment.slotId.date) > new Date() && (
-                                            <button
-                                                onClick={(e) => handleCancelClick(e, appointment)}
-                                                className="px-4 py-2 text-sm text-red-600 hover:text-red-800 font-medium"
-                                            >
-                                                Cancel
-                                            </button>
-                                        )}
+                                        new Date(appointment.slotId.date) > new Date()}
                                     </div>
                                 </div>
                                 {appointment.notes && (
@@ -291,7 +284,7 @@ const PatientAppointments = () => {
                         </div>
                         <div className="mt-8 flex justify-end space-x-4">
                             {(selectedAppointment.status === 'Confirmed' || selectedAppointment.status === 'Pending') && 
-                             new Date(selectedAppointment.slotId.date) > new Date() && (
+                            new Date(selectedAppointment.slotId.date) > new Date() && (
                                 <button
                                     onClick={() => {
                                         setShowModal(false);

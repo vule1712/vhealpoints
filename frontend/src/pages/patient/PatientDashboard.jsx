@@ -202,7 +202,43 @@ const PatientDashboard = () => {
                 toast.success('Appointment canceled successfully');
                 setShowCancelForm(false);
                 setCancelReason('');
-                fetchDashboardData(); // Refresh the dashboard data
+                // Refresh appointments data
+                const appointmentsResponse = await axios.get(`${backendUrl}/api/appointments/patient`, {
+                    withCredentials: true
+                });
+
+                if (appointmentsResponse.data.success) {
+                    const appointments = appointmentsResponse.data.appointments;
+                    
+                    // Calculate statistics
+                    const stats = {
+                        totalAppointments: appointments.length,
+                        upcomingAppointments: appointments.filter(apt => 
+                            apt.status === 'Confirmed' && new Date(apt.slotId.date) > new Date()
+                        ).length,
+                        completedAppointments: appointments.filter(apt => 
+                            apt.status === 'Completed'
+                        ).length,
+                        canceledAppointments: appointments.filter(apt => 
+                            apt.status === 'Canceled'
+                        ).length
+                    };
+
+                    // Get recent appointments (last 5)
+                    const recent = appointments
+                        .sort((a, b) => new Date(b.slotId.date) - new Date(a.slotId.date))
+                        .slice(0, 5);
+
+                    // Get upcoming appointments
+                    const upcoming = appointments
+                        .filter(apt => apt.status === 'Confirmed' && new Date(apt.slotId.date) > new Date())
+                        .sort((a, b) => new Date(a.slotId.date) - new Date(b.slotId.date))
+                        .slice(0, 5);
+
+                    setRecentAppointments(recent);
+                    setUpcomingAppointments(upcoming);
+                    setStats(prev => ({ ...prev, ...stats }));
+                }
             }
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to cancel appointment');
