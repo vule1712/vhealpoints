@@ -10,6 +10,7 @@ const PatientAppointments = () => {
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all'); // all, upcoming, past, canceled
     const [sortBy, setSortBy] = useState('date'); // date, status
+    const [doctorFilter, setDoctorFilter] = useState('all');
     const [selectedAppointment, setSelectedAppointment] = useState(null);
     const [showModal, setShowModal] = useState(false);
     const [showCancelForm, setShowCancelForm] = useState(false);
@@ -116,28 +117,46 @@ const PatientAppointments = () => {
         }
     };
 
+    const getUniqueDoctors = () => {
+        const doctors = appointments.map(app => ({
+            id: app.doctorId?._id,
+            name: app.doctorId?.name || 'Unknown Doctor'
+        }));
+        return Array.from(new Set(doctors.map(d => d.id)))
+            .map(id => doctors.find(d => d.id === id))
+            .filter(Boolean);
+    };
+
     const filteredAppointments = appointments
         .filter(appointment => {
             const appointmentDate = new Date(appointment.slotId.date);
             const today = new Date();
             today.setHours(0, 0, 0, 0);
-
-            switch (filter) {
-                case 'upcoming':
-                    return appointment.status === 'Confirmed' && appointmentDate >= today;
-                case 'past':
-                    return appointmentDate < today || appointment.status === 'Completed';
-                case 'canceled':
-                    return appointment.status === 'Canceled';
-                default:
-                    return true;
-            }
+            const statusMatch = (() => {
+                switch (filter) {
+                    case 'upcoming':
+                        return appointment.status === 'Confirmed' && appointmentDate >= today;
+                    case 'past':
+                        return appointmentDate < today || appointment.status === 'Completed';
+                    case 'canceled':
+                        return appointment.status === 'Canceled';
+                    default:
+                        return true;
+                }
+            })();
+            const doctorMatch = doctorFilter === 'all' || appointment.doctorId?._id === doctorFilter;
+            return statusMatch && doctorMatch;
         })
         .sort((a, b) => {
-            if (sortBy === 'date') {
-                return new Date(b.slotId.date) - new Date(a.slotId.date);
-            } else {
-                return a.status.localeCompare(b.status);
+            switch (sortBy) {
+                case 'date':
+                    return new Date(b.slotId.date) - new Date(a.slotId.date);
+                case 'doctor':
+                    return (a.doctorId?.name || '').localeCompare(b.doctorId?.name || '');
+                case 'status':
+                    return a.status.localeCompare(b.status);
+                default:
+                    return 0;
             }
         });
 
@@ -155,6 +174,18 @@ const PatientAppointments = () => {
                 <h1 className="text-2xl font-bold text-gray-800">My Appointments</h1>
                 <div className="flex gap-4">
                     <select
+                        value={doctorFilter}
+                        onChange={(e) => setDoctorFilter(e.target.value)}
+                        className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                        <option value="all">All Doctors</option>
+                        {getUniqueDoctors().map((doctor) => (
+                            <option key={doctor.id} value={doctor.id}>
+                                Dr. {doctor.name}
+                            </option>
+                        ))}
+                    </select>
+                    <select
                         value={filter}
                         onChange={(e) => setFilter(e.target.value)}
                         className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -170,6 +201,7 @@ const PatientAppointments = () => {
                         className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                         <option value="date">Sort by Date</option>
+                        <option value="doctor">Sort by Doctor</option>
                         <option value="status">Sort by Status</option>
                     </select>
                 </div>

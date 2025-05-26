@@ -1,15 +1,18 @@
 import express from 'express';
 import { userAuth } from '../middleware/userAuth.js';
+import { isAdmin } from '../middleware/authMiddleware.js';
 import {
     createAppointment,
     getDoctorAppointments,
     getPatientAppointments,
     updateAppointmentStatus,
-    cancelAppointment,
     getAvailableSlots,
     getDoctorSlots,
     addSlot,
-    deleteSlot
+    deleteSlot,
+    getAllAppointments,
+    getRecentAppointments,
+    deleteAppointment
 } from '../controllers/appointmentController.js';
 
 const appointmentRouter = express.Router();
@@ -34,7 +37,13 @@ appointmentRouter.delete('/slot/:slotId', userAuth, deleteSlot);
 // Update appointment status
 appointmentRouter.put('/:appointmentId/status', userAuth, updateAppointmentStatus);
 
-// Cancel appointment
-appointmentRouter.delete('/:appointmentId', userAuth, cancelAppointment);
+// Cancel appointment (using deleteAppointment)
+appointmentRouter.delete('/:appointmentId', userAuth, deleteAppointment);
+
+// Admin routes
+appointmentRouter.get('/admin/all', userAuth, isAdmin, getAllAppointments);
+appointmentRouter.get('/admin/recent', userAuth, isAdmin, getRecentAppointments);
+appointmentRouter.put('/admin/:appointmentId', userAuth, isAdmin, updateAppointmentStatus);
+appointmentRouter.delete('/admin/:appointmentId', userAuth, isAdmin, deleteAppointment);
 
 export default appointmentRouter; 

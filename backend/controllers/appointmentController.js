@@ -78,89 +78,112 @@ export const getPatientAppointments = async (req, res) => {
     }
 };
 
+// Get all appointments
+export const getAllAppointments = async (req, res) => {
+    try {
+        const appointments = await appointmentModel.find()
+            .populate('doctorId', 'name email specialization clinicName')
+            .populate('patientId', 'name email')
+            .populate('slotId', 'date startTime endTime')
+            .sort({ createdAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            data: appointments
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+// Get recent appointments (last 5)
+export const getRecentAppointments = async (req, res) => {
+    try {
+        const appointments = await appointmentModel.find()
+            .populate('doctorId', 'name email specialization clinicName')
+            .populate('patientId', 'name email')
+            .populate('slotId', 'date startTime endTime')
+            .sort({ createdAt: -1 })
+            .limit(5);
+
+        res.status(200).json({
+            success: true,
+            data: appointments
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
 // Update appointment status
 export const updateAppointmentStatus = async (req, res) => {
     try {
         const { appointmentId } = req.params;
         const { status, cancelReason } = req.body;
 
-        if (!['Pending', 'Confirmed', 'Canceled', 'Completed'].includes(status)) {
-            return res.json({ success: false, message: 'Invalid status' });
-        }
+        const appointment = await appointmentModel.findByIdAndUpdate(
+            appointmentId,
+            { 
+                status,
+                ...(status === 'Canceled' && { cancelReason })
+            },
+            { new: true }
+        );
 
-        const appointment = await appointmentModel.findById(appointmentId);
         if (!appointment) {
-            return res.json({ success: false, message: 'Appointment not found' });
-        }
-
-        // Only doctor can update status
-        if (appointment.doctorId.toString() !== req.user.userId) {
-            return res.json({ success: false, message: 'Unauthorized' });
-        }
-
-        // Validate status transitions
-        if (status === 'Completed' && appointment.status !== 'Confirmed') {
-            return res.json({ 
-                success: false, 
-                message: 'Only confirmed appointments can be marked as completed' 
+            return res.status(404).json({
+                success: false,
+                message: 'Appointment not found'
             });
         }
 
-        if (status === 'Canceled' && !cancelReason) {
-            return res.json({ 
-                success: false, 
-                message: 'Cancel reason is required' 
-            });
-        }
-
-        appointment.status = status;
-        if (status === 'Canceled') {
-            appointment.cancelReason = cancelReason;
-        }
-        await appointment.save();
-
-        res.json({
+        res.status(200).json({
             success: true,
-            message: 'Appointment status updated successfully',
-            appointment
+            data: appointment
         });
     } catch (error) {
-        res.json({ success: false, message: error.message });
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
     }
 };
 
-// Cancel appointment
-export const cancelAppointment = async (req, res) => {
+// Delete appointment
+export const deleteAppointment = async (req, res) => {
     try {
         const { appointmentId } = req.params;
-        const appointment = await appointmentModel.findById(appointmentId);
+
+        const appointment = await appointmentModel.findByIdAndDelete(appointmentId);
 
         if (!appointment) {
-            return res.json({ success: false, message: 'Appointment not found' });
+            return res.status(404).json({
+                success: false,
+                message: 'Appointment not found'
+            });
         }
 
-        // Check if user is authorized (either doctor or patient)
-        if (appointment.doctorId.toString() !== req.user.userId && 
-            appointment.patientId.toString() !== req.user.userId) {
-            return res.json({ success: false, message: 'Unauthorized' });
-        }
+        // Update the slot availability
+        await availableSlotModel.findByIdAndUpdate(
+            appointment.slotId,
+            { isBooked: false }
+        );
 
-        // Update slot status
-        const slot = await availableSlotModel.findById(appointment.slotId);
-        if (slot) {
-            slot.isBooked = false;
-            await slot.save();
-        }
-
-        // Delete appointment
-        await appointmentModel.findByIdAndDelete(appointmentId);
-
-        res.json({
+        res.status(200).json({
             success: true,
-            message: 'Appointment canceled successfully'
+            message: 'Appointment deleted successfully'
         });
     } catch (error) {
-        res.json({ success: false, message: error.message });
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
     }
 };
 

@@ -3,6 +3,7 @@ import axios from 'axios';
 import { AppContext } from '../../context/AppContext';
 import { toast } from 'react-toastify';
 import '../../styles/components.css';
+import RecentAppointments from '../../components/admin/RecentAppointments';
 
 const AdminDashboard = () => {
     const [stats, setStats] = useState({
@@ -55,7 +56,7 @@ const AdminDashboard = () => {
                 <p className="text-gray-600">{new Date().toLocaleDateString()}</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                 <div className="admin-card">
                     <h3 className="admin-card-title">Total Users</h3>
                     <p className="admin-card-value blue">{stats.totalUsers}</p>
@@ -68,6 +69,10 @@ const AdminDashboard = () => {
                     <h3 className="admin-card-title">Pending Verifications</h3>
                     <p className="admin-card-value yellow">{stats.pendingVerifications}</p>
                 </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <RecentAppointments />
             </div>
         </div>
     );

@@ -13,6 +13,8 @@ const DoctorAppointmentHistory = () => {
     const [cancelReason, setCancelReason] = useState('');
     const [showCancelForm, setShowCancelForm] = useState(false);
     const [filter, setFilter] = useState('all'); // all, pending, confirmed, completed, canceled
+    const [patientFilter, setPatientFilter] = useState('all');
+    const [sortBy, setSortBy] = useState('date');
 
     useEffect(() => {
         fetchAppointments();
@@ -97,10 +99,34 @@ const DoctorAppointmentHistory = () => {
         }
     };
 
-    const filteredAppointments = appointments.filter(appointment => {
-        if (filter === 'all') return true;
-        return appointment.status === filter;
-    });
+    const getUniquePatients = () => {
+        const patients = appointments.map(app => ({
+            id: app.patientId?._id,
+            name: app.patientId?.name || 'Unknown Patient'
+        }));
+        return Array.from(new Set(patients.map(p => p.id)))
+            .map(id => patients.find(p => p.id === id))
+            .filter(Boolean);
+    };
+
+    const filteredAppointments = appointments
+        .filter(appointment => {
+            const statusMatch = filter === 'all' || appointment.status === filter;
+            const patientMatch = patientFilter === 'all' || appointment.patientId?._id === patientFilter;
+            return statusMatch && patientMatch;
+        })
+        .sort((a, b) => {
+            switch (sortBy) {
+                case 'date':
+                    return new Date(b.slotId.date) - new Date(a.slotId.date);
+                case 'patient':
+                    return (a.patientId?.name || '').localeCompare(b.patientId?.name || '');
+                case 'status':
+                    return a.status.localeCompare(b.status);
+                default:
+                    return 0;
+            }
+        });
 
     if (loading) {
         return (
@@ -114,7 +140,19 @@ const DoctorAppointmentHistory = () => {
         <div className="p-6">
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold text-gray-800">Appointment History</h1>
-                <div className="flex space-x-2">
+                <div className="flex space-x-4">
+                    <select
+                        value={patientFilter}
+                        onChange={(e) => setPatientFilter(e.target.value)}
+                        className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                        <option value="all">All Patients</option>
+                        {getUniquePatients().map((patient) => (
+                            <option key={patient.id} value={patient.id}>
+                                {patient.name}
+                            </option>
+                        ))}
+                    </select>
                     <select
                         value={filter}
                         onChange={(e) => setFilter(e.target.value)}
@@ -125,6 +163,15 @@ const DoctorAppointmentHistory = () => {
                         <option value="Confirmed">Confirmed</option>
                         <option value="Completed">Completed</option>
                         <option value="Canceled">Canceled</option>
+                    </select>
+                    <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value)}
+                        className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                        <option value="date">Sort by Date</option>
+                        <option value="patient">Sort by Patient</option>
+                        <option value="status">Sort by Status</option>
                     </select>
                 </div>
             </div>

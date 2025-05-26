@@ -58,12 +58,20 @@ const UserProfilePage = () => {
         try {
             // First update role if changed
             if (editedUser.role !== user.role) {
-                const roleResponse = await axios.put(`${backendUrl}/api/admin/users/${userId}/role`, {
-                    role: editedUser.role
-                }, { withCredentials: true });
+                console.log('Updating role to:', editedUser.role);
+                const roleResponse = await axios.put(`${backendUrl}/api/admin/users/${userId}/role`, 
+                    JSON.stringify({ role: editedUser.role }), 
+                    { 
+                        withCredentials: true,
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    }
+                );
                 
                 if (!roleResponse.data.success) {
                     toast.error(roleResponse.data.message);
+                    setIsSaving(false);
                     return;
                 }
             }

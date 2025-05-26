@@ -7,6 +7,7 @@ import ResetPassword from './pages/ResetPassword'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import UserListPage from './pages/admin/UserListPage'
 import UserProfilePage from './pages/admin/UserProfilePage'
+import Appointments from './pages/admin/Appointments'
 import AdminLayout from './components/layouts/AdminLayout'
 import DoctorLayout from './components/layouts/DoctorLayout'
 import DoctorDashboard from './pages/doctor/DoctorDashboard'
@@ -112,6 +113,11 @@ const App = () => {
           <Route path='user-profile/:userId' element={
             <ProtectedRoute>
               <UserProfilePage />
+            </ProtectedRoute>
+          } />
+          <Route path='appointments' element={
+            <ProtectedRoute>
+              <Appointments />
             </ProtectedRoute>
           } />
         </Route>

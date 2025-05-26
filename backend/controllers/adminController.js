@@ -24,6 +24,8 @@ export const updateUserRole = async (req, res) => {
         const { userId } = req.params;
         const { role } = req.body;
 
+        console.log('Updating user role:', { userId, role, body: req.body });
+
         if (!mongoose.Types.ObjectId.isValid(userId)) {
             return res.status(400).json({
                 success: false,
@@ -31,10 +33,17 @@ export const updateUserRole = async (req, res) => {
             });
         }
 
+        if (!role || typeof role !== 'string') {
+            return res.status(400).json({
+                success: false,
+                message: 'Role is required and must be a string'
+            });
+        }
+
         if (!['Admin', 'Doctor', 'Patient'].includes(role)) {
             return res.status(400).json({
                 success: false,
-                message: 'Invalid role'
+                message: 'Invalid role. Must be one of: Admin, Doctor, Patient'
             });
         }
 
@@ -57,6 +66,13 @@ export const updateUserRole = async (req, res) => {
             }
         }
 
+        // If changing to Doctor role, set default values for required fields
+        if (role === 'Doctor' && user.role !== 'Doctor') {
+            user.specialization = user.specialization || 'General';
+            user.clinicName = user.clinicName || 'My Clinic';
+            user.clinicAddress = user.clinicAddress || 'To be updated';
+        }
+
         user.role = role;
         await user.save();
 
@@ -68,7 +84,7 @@ export const updateUserRole = async (req, res) => {
         console.error('Error updating user role:', error);
         res.status(500).json({
             success: false,
-            message: 'Failed to update user role'
+            message: error.message || 'Failed to update user role'
         });
     }
 };
