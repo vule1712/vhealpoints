@@ -3,6 +3,7 @@ import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { AppContext } from '../../context/AppContext';
 import { format, parseISO } from 'date-fns';
+import AppointmentDetailsModal from '../../components/admin/AppointmentDetailsModal';
 
 const Appointments = () => {
     const [appointments, setAppointments] = useState([]);
@@ -10,18 +11,27 @@ const Appointments = () => {
     const [error, setError] = useState(null);
     const [filter, setFilter] = useState('all');
     const [doctorFilter, setDoctorFilter] = useState('all');
+    const [selectedAppointment, setSelectedAppointment] = useState(null);
+    const [showModal, setShowModal] = useState(false);
     const { backendUrl } = useContext(AppContext);
+    const [statusFilter, setStatusFilter] = useState('All');
+    const statusOptions = ['All', 'Confirmed', 'Canceled', 'Completed'];
 
     const formatTime = (timeString) => {
         try {
-            // If the time is already in HH:mm format, return it directly
-            if (/^\d{2}:\d{2}$/.test(timeString)) {
+            // If the time is already in 12-hour format, return it
+            if (/^(0?[1-9]|1[0-2]):[0-5][0-9] (AM|PM)$/.test(timeString)) {
                 return timeString;
             }
             
-            // If it's a full date string, extract just the time part
+            // If it's in HH:mm format, convert to 12-hour format
+            if (/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(timeString)) {
+                return format(new Date(`2000-01-01 ${timeString}`), 'hh:mm a');
+            }
+            
+            // If it's a full date string, extract and format the time
             const date = new Date(timeString);
-            return format(date, 'HH:mm');
+            return format(date, 'hh:mm a');
         } catch (error) {
             return timeString; // Return original string if parsing fails
         }
@@ -39,8 +49,6 @@ const Appointments = () => {
         switch (status) {
             case 'Confirmed':
                 return 'bg-green-100 text-green-800';
-            case 'Pending':
-                return 'bg-yellow-100 text-yellow-800';
             case 'Canceled':
                 return 'bg-red-100 text-red-800';
             case 'Completed':
@@ -86,6 +94,16 @@ const Appointments = () => {
         fetchAppointments();
     }, [backendUrl]);
 
+    const handleAppointmentClick = (appointment) => {
+        setSelectedAppointment(appointment);
+        setShowModal(true);
+    };
+
+    const handleAppointmentUpdate = () => {
+        // Refresh appointments data
+        fetchAppointments();
+    };
+
     const handleStatusUpdate = async (appointmentId, newStatus) => {
         try {
             const response = await axios.put(
@@ -124,7 +142,7 @@ const Appointments = () => {
     };
 
     const filteredAppointments = appointments.filter(appointment => {
-        const statusMatch = filter === 'all' || appointment.status === filter;
+        const statusMatch = statusFilter === 'All' || appointment.status === statusFilter;
         const doctorMatch = doctorFilter === 'all' || appointment.doctorId._id === doctorFilter;
         return statusMatch && doctorMatch;
     });
@@ -133,15 +151,9 @@ const Appointments = () => {
         return (
             <div className="min-h-screen bg-gray-50 py-8">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="bg-white rounded-lg shadow-lg p-6">
-                        <div className="animate-pulse space-y-4">
-                            {[1, 2, 3, 4, 5].map((i) => (
-                                <div key={i} className="border-b border-gray-200 pb-4">
-                                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                                </div>
-                            ))}
-                        </div>
+                    <div className="animate-pulse">
+                        <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
+                        <div className="h-96 bg-gray-200 rounded"></div>
                     </div>
                 </div>
             </div>
@@ -179,15 +191,15 @@ const Appointments = () => {
                             ))}
                         </select>
                         <select
-                            value={filter}
-                            onChange={(e) => setFilter(e.target.value)}
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
                             className="px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         >
-                            <option value="all">All Status</option>
-                            <option value="Pending">Pending</option>
-                            <option value="Confirmed">Confirmed</option>
-                            <option value="Completed">Completed</option>
-                            <option value="Canceled">Canceled</option>
+                            {statusOptions.map(status => (
+                                <option key={status} value={status}>
+                                    {status}
+                                </option>
+                            ))}
                         </select>
                     </div>
                 </div>
@@ -201,13 +213,16 @@ const Appointments = () => {
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
                                 {filteredAppointments.length > 0 ? (
                                     filteredAppointments.map((appointment) => (
-                                        <tr key={appointment._id} className="hover:bg-gray-50 transition-colors">
+                                        <tr 
+                                            key={appointment._id} 
+                                            className="hover:bg-gray-50 transition-colors cursor-pointer"
+                                            onClick={() => handleAppointmentClick(appointment)}
+                                        >
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <div className="flex items-center">
                                                     <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
@@ -239,33 +254,15 @@ const Appointments = () => {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <select
-                                                    value={appointment.status}
-                                                    onChange={(e) => handleStatusUpdate(appointment._id, e.target.value)}
-                                                    className={`text-sm rounded-full px-3 py-1 font-medium ${getStatusColor(appointment.status)} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
-                                                >
-                                                    <option value="Pending">Pending</option>
-                                                    <option value="Confirmed">Confirmed</option>
-                                                    <option value="Canceled">Canceled</option>
-                                                    <option value="Completed">Completed</option>
-                                                </select>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <button
-                                                    onClick={() => handleDelete(appointment._id)}
-                                                    className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
-                                                >
-                                                    <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                    </svg>
-                                                    Delete
-                                                </button>
+                                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(appointment.status)}`}>
+                                                    {appointment.status}
+                                                </span>
                                             </td>
                                         </tr>
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
+                                        <td colSpan="4" className="px-6 py-8 text-center text-gray-500">
                                             <div className="flex flex-col items-center">
                                                 <svg className="h-12 w-12 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -281,6 +278,16 @@ const Appointments = () => {
                     </div>
                 </div>
             </div>
+
+            <AppointmentDetailsModal
+                appointment={selectedAppointment}
+                showModal={showModal}
+                onClose={() => {
+                    setShowModal(false);
+                    setSelectedAppointment(null);
+                }}
+                onAppointmentUpdate={handleAppointmentUpdate}
+            />
         </div>
     );
 };

@@ -26,6 +26,9 @@ import DoctorAppointmentHistory from './pages/doctor/DoctorAppointmentHistory'
 import BookAppointment from './pages/patient/BookAppointment'
 import ManageSlots from './pages/doctor/ManageSlots'
 import PatientAppointments from './pages/patient/PatientAppointments'
+import AdminAppointments from './pages/admin/AdminAppointments'
+import DoctorManagement from './pages/admin/DoctorManagement'
+import AppointmentHistoryPage from './pages/patient/AppointmentHistory'
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
@@ -115,9 +118,19 @@ const App = () => {
               <UserProfilePage />
             </ProtectedRoute>
           } />
+          <Route path='doctors' element={
+            <ProtectedRoute>
+              <DoctorManagement />
+            </ProtectedRoute>
+          } />
           <Route path='appointments' element={
             <ProtectedRoute>
               <Appointments />
+            </ProtectedRoute>
+          } />
+          <Route path='all-appointments' element={
+            <ProtectedRoute>
+              <AdminAppointments />
             </ProtectedRoute>
           } />
         </Route>
@@ -152,6 +165,7 @@ const App = () => {
           <Route path='doctor/:doctorId' element={<DoctorProfile />} />
           <Route path='book-appointment/:doctorId' element={<BookAppointment />} />
           <Route path='appointments' element={<PatientAppointments />} />
+          <Route path='appointment-history' element={<AppointmentHistoryPage />} />
         </Route>
 
         {/* Catch all route */}

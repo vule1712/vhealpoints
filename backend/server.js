@@ -8,6 +8,7 @@ import userRouter from './routes/userRoutes.js';
 import adminRouter from './routes/adminRoutes.js';
 import appointmentRouter from './routes/appointmentRoutes.js';
 import doctorRouter from './routes/doctorRoutes.js';
+import './middleware/appointmentStatusUpdater.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;

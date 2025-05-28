@@ -10,7 +10,7 @@ import '../../styles/calendar.css';
 import { AppContext } from '../../context/AppContext';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import AppointmentDetailsModal from '../../components/patient/AppointmentDetailsModal';
+import AppointmentDetailsModal from '../../components/admin/AppointmentDetailsModal';
 
 const locales = {
     'en-US': enUS
@@ -24,7 +24,7 @@ const localizer = dateFnsLocalizer({
     locales,
 });
 
-const PatientAppointments = () => {
+const AdminAppointments = () => {
     const { backendUrl } = useContext(AppContext);
     const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -37,12 +37,12 @@ const PatientAppointments = () => {
 
     const fetchAppointments = async () => {
         try {
-            const response = await axios.get(`${backendUrl}/api/appointments/patient`, {
+            const response = await axios.get(`${backendUrl}/api/appointments/admin/all`, {
                 withCredentials: true
             });
 
-            if (response.data.success && Array.isArray(response.data.appointments)) {
-                const formattedAppointments = response.data.appointments.map(appointment => {
+            if (response.data.success && Array.isArray(response.data.data)) {
+                const formattedAppointments = response.data.data.map(appointment => {
                     try {
                         // Get the date from the slot
                         const slotDate = appointment.slotId.date;
@@ -89,13 +89,14 @@ const PatientAppointments = () => {
 
                         return {
                             id: appointment._id,
-                            title: `Dr. ${appointment.doctorId?.name || 'Unknown'}`,
+                            title: `Dr. ${appointment.doctorId?.name || 'Unknown'} - ${appointment.patientId?.name || 'Unknown Patient'}`,
                             start: startTime,
                             end: endTime,
                             status: appointment.status,
                             notes: appointment.notes,
                             cancelReason: appointment.cancelReason,
                             doctorId: appointment.doctorId,
+                            patientId: appointment.patientId,
                             slotId: appointment.slotId,
                             _id: appointment._id
                         };
@@ -158,8 +159,8 @@ const PatientAppointments = () => {
 
     if (loading) {
         return (
-            <div className="patient-loading-spinner">
-                <div className="patient-spinner"></div>
+            <div className="admin-loading-spinner">
+                <div className="admin-spinner"></div>
             </div>
         );
     }
@@ -197,4 +198,4 @@ const PatientAppointments = () => {
     );
 };
 
-export default PatientAppointments; 
+export default AdminAppointments; 

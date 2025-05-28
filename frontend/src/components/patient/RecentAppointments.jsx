@@ -13,17 +13,12 @@ const RecentAppointments = () => {
 
     const formatTime = (timeString) => {
         try {
-            // If the time is already in 12-hour format, return it
-            if (/^(0?[1-9]|1[0-2]):[0-5][0-9] (AM|PM)$/.test(timeString)) {
+            // If the time is already in HH:mm format, return it directly
+            if (/^\d{2}:\d{2}$/.test(timeString)) {
                 return timeString;
             }
             
-            // If it's in HH:mm format, convert to 12-hour format
-            if (/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(timeString)) {
-                return format(new Date(`2000-01-01 ${timeString}`), 'hh:mm a');
-            }
-            
-            // If it's a full date string, extract and format the time
+            // If it's a full date string, extract just the time part
             const date = new Date(timeString);
             return format(date, 'hh:mm a');
         } catch (error) {
@@ -43,7 +38,7 @@ const RecentAppointments = () => {
         try {
             setLoading(true);
             setError(null);
-            const response = await axios.get(`${backendUrl}/api/appointments/admin/recent`, {
+            const response = await axios.get(`${backendUrl}/api/appointments/patient/recent`, {
                 withCredentials: true
             });
             if (response.data.success) {
@@ -98,7 +93,7 @@ const RecentAppointments = () => {
             <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold">Recent Appointments</h2>
                 <Link 
-                    to="/admin/appointments" 
+                    to="/patient/appointment-history" 
                     className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                 >
                     View All
@@ -132,9 +127,6 @@ const RecentAppointments = () => {
                             </div>
                             
                             <div className="mt-2">
-                                <p className="text-sm text-gray-600">
-                                    Patient: {appointment.patientId.name}
-                                </p>
                                 <p className="text-sm text-gray-600">
                                     Date: {formatDate(appointment.slotId.date)}
                                 </p>

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { AppContext } from '../../context/AppContext';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import { format, addDays, isToday, isTomorrow } from 'date-fns';
+import { format, addDays, isToday, isTomorrow, parseISO } from 'date-fns';
 
 const BookAppointment = () => {
     const { doctorId } = useParams();
@@ -44,10 +44,15 @@ const BookAppointment = () => {
                 withCredentials: true
             });
 
+            console.log('Available slots response:', response.data);
+
             if (response.data.success) {
                 setAvailableSlots(response.data.slots);
+            } else {
+                toast.error(response.data.message || 'Failed to fetch available slots');
             }
         } catch (error) {
+            console.error('Error fetching slots:', error);
             toast.error(error.response?.data?.message || 'Failed to fetch available slots');
         } finally {
             setLoading(false);
@@ -86,8 +91,11 @@ const BookAppointment = () => {
             if (response.data.success) {
                 toast.success('Appointment booked successfully');
                 navigate('/patient/appointments');
+            } else {
+                toast.error(response.data.message || 'Failed to book appointment');
             }
         } catch (error) {
+            console.error('Error booking appointment:', error);
             toast.error(error.response?.data?.message || 'Failed to book appointment');
         }
     };
@@ -95,7 +103,25 @@ const BookAppointment = () => {
     const getDateLabel = (date) => {
         if (isToday(new Date(date))) return 'Today';
         if (isTomorrow(new Date(date))) return 'Tomorrow';
-        return format(new Date(date), 'EEEE, MMMM d');
+        return format(new Date(date), 'dd-MM-yyyy');
+    };
+
+    const formatTime = (timeString) => {
+        try {
+            // If time is already in 12-hour format, return it
+            if (/^(0?[1-9]|1[0-2]):[0-5][0-9] (AM|PM)$/.test(timeString)) {
+                return timeString;
+            }
+            // If time is in HH:mm format, convert to 12-hour format
+            if (/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(timeString)) {
+                return format(new Date(`2000-01-01 ${timeString}`), 'hh:mm a');
+            }
+            // If time is a full date string, extract and format the time
+            return format(new Date(timeString), 'hh:mm a');
+        } catch (error) {
+            console.error('Error formatting time:', error);
+            return 'Invalid time';
+        }
     };
 
     if (loading) {
@@ -111,9 +137,22 @@ const BookAppointment = () => {
     }
 
     // Filter slots for selected date
-    const filteredSlots = availableSlots.filter(slot => 
-        format(new Date(slot.date), 'yyyy-MM-dd') === selectedDate
-    );
+    const filteredSlots = availableSlots.filter(slot => {
+        try {
+            // Parse the date from DD/MM/YYYY format
+            const [day, month, year] = slot.date.split('/');
+            const slotDate = new Date(year, month - 1, day);
+            const selectedDateObj = new Date(selectedDate);
+            
+            // Compare dates by year, month, and day only
+            return slotDate.getFullYear() === selectedDateObj.getFullYear() &&
+                   slotDate.getMonth() === selectedDateObj.getMonth() &&
+                   slotDate.getDate() === selectedDateObj.getDate();
+        } catch (error) {
+            console.error('Error filtering slots:', error);
+            return false;
+        }
+    });
 
     return (
         <div className="container mx-auto px-4 py-8">
@@ -180,10 +219,10 @@ const BookAppointment = () => {
                                                     }`}
                                                 >
                                                     <div className="font-medium">
-                                                        {format(new Date(slot.startTime), 'hh:mm a')}
+                                                        {formatTime(slot.startTime)}
                                                     </div>
                                                     <div className="text-sm">
-                                                        to {format(new Date(slot.endTime), 'hh:mm a')}
+                                                        to {formatTime(slot.endTime)}
                                                     </div>
                                                 </button>
                                             ))

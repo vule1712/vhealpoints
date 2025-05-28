@@ -1,33 +1,27 @@
 import { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
-import { Link } from 'react-router-dom';
 import { AppContext } from '../../context/AppContext';
 import { format, parseISO } from 'date-fns';
+import AppointmentDetailsModal from './AppointmentDetailsModal';
 
-const RecentAppointments = () => {
+const AppointmentHistory = () => {
     const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [selectedAppointment, setSelectedAppointment] = useState(null);
+    const [showModal, setShowModal] = useState(false);
     const { backendUrl } = useContext(AppContext);
 
     const formatTime = (timeString) => {
         try {
-            // If the time is already in 12-hour format, return it
-            if (/^(0?[1-9]|1[0-2]):[0-5][0-9] (AM|PM)$/.test(timeString)) {
+            if (/^\d{2}:\d{2}$/.test(timeString)) {
                 return timeString;
             }
-            
-            // If it's in HH:mm format, convert to 12-hour format
-            if (/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(timeString)) {
-                return format(new Date(`2000-01-01 ${timeString}`), 'hh:mm a');
-            }
-            
-            // If it's a full date string, extract and format the time
             const date = new Date(timeString);
             return format(date, 'hh:mm a');
         } catch (error) {
-            return timeString; // Return original string if parsing fails
+            return timeString;
         }
     };
 
@@ -39,37 +33,44 @@ const RecentAppointments = () => {
         }
     };
 
-    const fetchRecentAppointments = async () => {
+    const fetchAppointments = async () => {
         try {
             setLoading(true);
             setError(null);
-            const response = await axios.get(`${backendUrl}/api/appointments/admin/recent`, {
+            const response = await axios.get(`${backendUrl}/api/appointments/patient`, {
                 withCredentials: true
             });
             if (response.data.success) {
-                setAppointments(response.data.data || []);
+                setAppointments(response.data.appointments || []);
             } else {
                 setError(response.data.message || 'Failed to fetch appointments');
                 toast.error(response.data.message || 'Failed to fetch appointments');
             }
         } catch (error) {
-            setError(error.response?.data?.message || 'Error fetching recent appointments');
-            toast.error(error.response?.data?.message || 'Error fetching recent appointments');
+            setError(error.response?.data?.message || 'Error fetching appointments');
+            toast.error(error.response?.data?.message || 'Error fetching appointments');
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchRecentAppointments();
+        fetchAppointments();
     }, [backendUrl]);
+
+    const handleAppointmentClick = (appointment) => {
+        setSelectedAppointment(appointment);
+        setShowModal(true);
+    };
+
+    const handleAppointmentUpdate = () => {
+        fetchAppointments();
+    };
 
     if (loading) {
         return (
             <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-semibold">Recent Appointments</h2>
-                </div>
+                <h2 className="text-2xl font-semibold mb-6">Appointment History</h2>
                 <div className="animate-pulse space-y-4">
                     {[1, 2, 3, 4, 5].map((i) => (
                         <div key={i} className="border-b border-gray-200 pb-4">
@@ -85,9 +86,7 @@ const RecentAppointments = () => {
     if (error) {
         return (
             <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-semibold">Recent Appointments</h2>
-                </div>
+                <h2 className="text-2xl font-semibold mb-6">Appointment History</h2>
                 <div className="text-red-500 text-center py-4">{error}</div>
             </div>
         );
@@ -95,22 +94,15 @@ const RecentAppointments = () => {
 
     return (
         <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold">Recent Appointments</h2>
-                <Link 
-                    to="/admin/appointments" 
-                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                >
-                    View All
-                </Link>
-            </div>
+            <h2 className="text-2xl font-semibold mb-6">Appointment History</h2>
             
             <div className="space-y-4">
                 {appointments && appointments.length > 0 ? (
                     appointments.map((appointment) => (
                         <div 
                             key={appointment._id} 
-                            className="border-b border-gray-200 pb-4 last:border-b-0 last:pb-0"
+                            className="border-b border-gray-200 pb-4 last:border-b-0 last:pb-0 cursor-pointer hover:bg-gray-50 p-4 rounded-lg transition-colors"
+                            onClick={() => handleAppointmentClick(appointment)}
                         >
                             <div className="flex justify-between items-start">
                                 <div>
@@ -133,9 +125,6 @@ const RecentAppointments = () => {
                             
                             <div className="mt-2">
                                 <p className="text-sm text-gray-600">
-                                    Patient: {appointment.patientId.name}
-                                </p>
-                                <p className="text-sm text-gray-600">
                                     Date: {formatDate(appointment.slotId.date)}
                                 </p>
                                 <p className="text-sm text-gray-600">
@@ -145,11 +134,23 @@ const RecentAppointments = () => {
                         </div>
                     ))
                 ) : (
-                    <p className="text-gray-500 text-center py-4">No recent appointments</p>
+                    <p className="text-gray-500 text-center py-4">No appointments found</p>
                 )}
             </div>
+
+            {selectedAppointment && (
+                <AppointmentDetailsModal
+                    appointment={selectedAppointment}
+                    showModal={showModal}
+                    onClose={() => {
+                        setShowModal(false);
+                        setSelectedAppointment(null);
+                    }}
+                    onAppointmentUpdate={handleAppointmentUpdate}
+                />
+            )}
         </div>
     );
 };
 
-export default RecentAppointments; 
+export default AppointmentHistory; 

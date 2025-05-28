@@ -100,18 +100,24 @@ export const getDoctorTotalPatients = async(req, res) => {
     }
 }
 
-export const getAllDoctors = async(req, res) => {
+export const getAllDoctors = async (req, res) => {
     try {
-        const doctors = await userModel.find({ role: 'Doctor' }).select('-password -verifyOtp -verifyOtpExpireAt -resetOtp -resetOtpExpireAt');
+        const doctors = await userModel.find({ role: 'Doctor' })
+            .select('-password -verifyOtp -verifyOtpExpireAt -resetOtp -resetOtpExpireAt')
+            .sort({ name: 1 });
         
         res.json({
             success: true,
             doctors
         });
     } catch (error) {
-        return res.json({success: false, message: error.message});
+        console.error('Error fetching doctors:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Error fetching doctors'
+        });
     }
-}
+};
 
 export const updateProfile = async(req, res) => {
     try {

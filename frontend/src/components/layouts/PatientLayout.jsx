@@ -9,6 +9,7 @@ const PatientLayout = () => {
         { title: 'Dashboard', path: '/patient/dashboard', icon: '📊' },
         { title: 'Find Doctors', path: '/patient/doctors', icon: '👨‍⚕️' },
         { title: 'My Appointments', path: '/patient/appointments', icon: '📅' },
+        { title: 'Appointment History', path: '/patient/appointment-history', icon: '🕔' },
         { title: 'Prescriptions', path: '/patient/prescriptions', icon: '💊' }
     ];
 

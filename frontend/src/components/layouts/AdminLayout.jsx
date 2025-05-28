@@ -7,7 +7,9 @@ const AdminLayout = () => {
     const menuItems = [
         { path: '/admin', label: 'Dashboard', icon: '📊' },
         { path: '/admin/users', label: 'User List', icon: '👥' },
+        { path: '/admin/doctors', label: 'Doctor Management', icon: '👨‍⚕️' },
         { path: '/admin/appointments', label: 'Manage Appointments', icon: '📅' },
+        { path: '/admin/all-appointments', label: 'All Appointments', icon: '📆' },
     ];
 
     return (

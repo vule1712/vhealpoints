@@ -10,6 +10,7 @@ import '../../styles/calendar.css';
 import { AppContext } from '../../context/AppContext';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import AppointmentDetailsModal from '../../components/doctor/AppointmentDetailsModal';
 
 const locales = {
     'en-US': enUS
@@ -29,8 +30,6 @@ const DoctorAppointments = () => {
     const [loading, setLoading] = useState(true);
     const [selectedAppointment, setSelectedAppointment] = useState(null);
     const [showModal, setShowModal] = useState(false);
-    const [showCancelForm, setShowCancelForm] = useState(false);
-    const [cancelReason, setCancelReason] = useState('');
 
     useEffect(() => {
         fetchAppointments();
@@ -42,21 +41,79 @@ const DoctorAppointments = () => {
                 withCredentials: true
             });
 
-            if (response.data.success) {
-                const formattedAppointments = response.data.appointments.map(appointment => ({
-                    id: appointment._id,
-                    title: `Appointment with ${appointment.patientId.name}`,
-                    start: new Date(appointment.slotId.date),
-                    end: new Date(appointment.slotId.date),
-                    status: appointment.status,
-                    notes: appointment.notes,
-                    cancelReason: appointment.cancelReason,
-                    patient: appointment.patientId
-                }));
+            if (response.data.success && Array.isArray(response.data.appointments)) {
+                const formattedAppointments = response.data.appointments.map(appointment => {
+                    try {
+                        // Get the date from the slot
+                        const slotDate = appointment.slotId.date;
+                        const [day, month, year] = slotDate.split('/');
+
+                        // Get start and end times
+                        let startTime, endTime;
+
+                        // Handle different time formats
+                        if (appointment.slotId.startTime instanceof Date) {
+                            startTime = appointment.slotId.startTime;
+                        } else if (typeof appointment.slotId.startTime === 'string') {
+                            // Parse 12-hour format (e.g., "09:00 AM")
+                            const [time, period] = appointment.slotId.startTime.split(' ');
+                            let [hours, minutes] = time.split(':');
+                            hours = parseInt(hours);
+                            if (period === 'PM' && hours !== 12) hours += 12;
+                            if (period === 'AM' && hours === 12) hours = 0;
+                            startTime = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), hours, parseInt(minutes));
+                        }
+
+                        if (appointment.slotId.endTime instanceof Date) {
+                            endTime = appointment.slotId.endTime;
+                        } else if (typeof appointment.slotId.endTime === 'string') {
+                            // Parse 12-hour format (e.g., "10:00 AM")
+                            const [time, period] = appointment.slotId.endTime.split(' ');
+                            let [hours, minutes] = time.split(':');
+                            hours = parseInt(hours);
+                            if (period === 'PM' && hours !== 12) hours += 12;
+                            if (period === 'AM' && hours === 12) hours = 0;
+                            endTime = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), hours, parseInt(minutes));
+                        }
+
+                        // Validate dates
+                        if (!startTime || !endTime || isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
+                            console.error('Invalid date/time for appointment:', {
+                                id: appointment._id,
+                                date: slotDate,
+                                startTime: appointment.slotId.startTime,
+                                endTime: appointment.slotId.endTime
+                            });
+                            return null;
+                        }
+
+                        return {
+                            id: appointment._id,
+                            title: `${appointment.patientId?.name || 'Unknown Patient'}`,
+                            start: startTime,
+                            end: endTime,
+                            status: appointment.status,
+                            notes: appointment.notes,
+                            cancelReason: appointment.cancelReason,
+                            patientId: appointment.patientId,
+                            slotId: appointment.slotId,
+                            _id: appointment._id
+                        };
+                    } catch (error) {
+                        console.error('Error formatting appointment:', error);
+                        return null;
+                    }
+                }).filter(Boolean); // Remove any null entries
+
                 setAppointments(formattedAppointments);
+            } else {
+                toast.error('Invalid response format from server');
+                setAppointments([]);
             }
         } catch (error) {
+            console.error('Error fetching appointments:', error);
             toast.error(error.response?.data?.message || 'Failed to fetch appointments');
+            setAppointments([]);
         } finally {
             setLoading(false);
         }
@@ -65,61 +122,6 @@ const DoctorAppointments = () => {
     const handleSelectEvent = (appointment) => {
         setSelectedAppointment(appointment);
         setShowModal(true);
-    };
-
-    const handleUpdateStatus = async (status) => {
-        try {
-            const response = await axios.put(
-                `${backendUrl}/api/appointments/${selectedAppointment.id}/status`,
-                { 
-                    status,
-                    cancelReason: status === 'Canceled' ? cancelReason : undefined
-                },
-                { withCredentials: true }
-            );
-
-            if (response.data.success) {
-                toast.success('Appointment status updated successfully');
-                fetchAppointments();
-                setShowModal(false);
-                setCancelReason('');
-                setShowCancelForm(false);
-            }
-        } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to update appointment status');
-        }
-    };
-
-    const handleCancelClick = (appointment) => {
-        setSelectedAppointment(appointment);
-        setShowCancelForm(true);
-    };
-
-    const handleCancelSubmit = async () => {
-        if (!cancelReason.trim()) {
-            toast.error('Please provide a reason for cancellation');
-            return;
-        }
-
-        try {
-            const response = await axios.put(
-                `${backendUrl}/api/appointments/${selectedAppointment._id}/status`,
-                { 
-                    status: 'Canceled',
-                    cancelReason 
-                },
-                { withCredentials: true }
-            );
-
-            if (response.data.success) {
-                toast.success('Appointment canceled successfully');
-                setShowCancelForm(false);
-                setCancelReason('');
-                fetchAppointments(); // Refresh the list
-            }
-        } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to cancel appointment');
-        }
     };
 
     const eventStyleGetter = (event) => {
@@ -131,8 +133,8 @@ const DoctorAppointments = () => {
             case 'Canceled':
                 backgroundColor = '#dc3545';
                 break;
-            case 'Pending':
-                backgroundColor = '#ffc107';
+            case 'Completed':
+                backgroundColor = '#007bff';
                 break;
             default:
                 break;
@@ -150,10 +152,14 @@ const DoctorAppointments = () => {
         };
     };
 
+    const handleAppointmentUpdate = () => {
+        fetchAppointments();
+    };
+
     if (loading) {
         return (
-            <div className="admin-loading-spinner">
-                <div className="admin-spinner"></div>
+            <div className="doctor-loading-spinner">
+                <div className="doctor-spinner"></div>
             </div>
         );
     }
@@ -173,142 +179,20 @@ const DoctorAppointments = () => {
                     views={['month', 'week', 'day']}
                     popup
                     selectable
+                    min={new Date(0, 0, 0, 8, 0, 0)} // 8 AM
+                    max={new Date(0, 0, 0, 20, 0, 0)} // 8 PM
                 />
             </div>
 
-            {/* Appointment Details Modal */}
-            {showModal && selectedAppointment && !showCancelForm && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]" style={{ marginTop: '-82px' }}>
-                    <div className="bg-white rounded-lg p-8 max-w-2xl w-full relative">
-                        <button
-                            onClick={() => {
-                                setShowModal(false);
-                                setShowCancelForm(false);
-                                setCancelReason('');
-                            }}
-                            className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
-                        >
-                            ✕
-                        </button>
-                        <h2 className="text-2xl font-bold mb-6">Appointment Details</h2>
-                        <div className="space-y-6">
-                            <div>
-                                <p className="text-gray-600 text-sm">Patient Name</p>
-                                <p className="font-semibold text-lg">{selectedAppointment.patient.name}</p>
-                            </div>
-                            <div>
-                                <p className="text-gray-600 text-sm">Date & Time</p>
-                                <p className="font-semibold text-lg">
-                                    {format(selectedAppointment.start, 'PPP p')}
-                                </p>
-                            </div>
-                            <div>
-                                <p className="text-gray-600 text-sm">Status</p>
-                                <p className={`font-semibold text-lg ${
-                                    selectedAppointment.status === 'Completed' ? 'text-blue-600' :
-                                    selectedAppointment.status === 'Confirmed' ? 'text-green-600' :
-                                    selectedAppointment.status === 'Pending' ? 'text-yellow-600' :
-                                    'text-red-600'
-                                }`}>
-                                    {selectedAppointment.status}
-                                </p>
-                            </div>
-                            {selectedAppointment.status === 'Canceled' && (
-                                <div>
-                                    <p className="text-gray-600 text-sm">Cancellation Reason</p>
-                                    <p className="font-semibold text-lg text-red-600">
-                                        {selectedAppointment.cancelReason || 'No reason provided'}
-                                    </p>
-                                </div>
-                            )}
-                            {selectedAppointment.notes && (
-                                <div>
-                                    <p className="text-gray-600">Notes</p>
-                                    <p className="font-semibold">{selectedAppointment.notes}</p>
-                                </div>
-                            )}
-                        </div>
-
-                        {showCancelForm && (
-                            <div className="mt-4 p-4 border border-red-200 rounded-lg bg-red-50">
-                                <p className="text-red-600 font-medium mb-2">Please provide a reason for cancellation:</p>
-                                <textarea
-                                    value={cancelReason}
-                                    onChange={(e) => setCancelReason(e.target.value)}
-                                    className="w-full p-2 border border-red-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
-                                    rows="3"
-                                    placeholder="Enter reason for cancellation..."
-                                />
-                                <div className="mt-2 flex justify-end space-x-2">
-                                    <button
-                                        onClick={() => {
-                                            setShowCancelForm(false);
-                                            setCancelReason('');
-                                        }}
-                                        className="px-3 py-1 text-gray-600 hover:text-gray-800"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        onClick={handleCancelSubmit}
-                                        className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-                                    >
-                                        Submit
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="mt-6 flex justify-end space-x-4">
-                            {selectedAppointment.status === 'Pending' && (
-                                <>
-                                    <button
-                                        onClick={() => handleUpdateStatus('Confirmed')}
-                                        className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
-                                    >
-                                        Confirm
-                                    </button>
-                                    <button
-                                        onClick={handleCancelClick}
-                                        className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-                                    >
-                                        Cancel with Reason
-                                    </button>
-                                </>
-                            )}
-                            {selectedAppointment.status === 'Confirmed' && (
-                                <>
-                                    <button
-                                        onClick={() => handleUpdateStatus('Completed')}
-                                        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-                                    >
-                                        Mark as Completed
-                                    </button>
-                                    <button
-                                        onClick={handleCancelClick}
-                                        className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-                                    >
-                                        Cancel with Reason
-                                    </button>
-                                </>
-                            )}
-                            {selectedAppointment.status === 'Completed' && (
-                                <p className="text-green-600 font-medium">This appointment has been completed</p>
-                            )}
-                            <button
-                                onClick={() => {
-                                    setShowModal(false);
-                                    setShowCancelForm(false);
-                                    setCancelReason('');
-                                }}
-                                className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
-                            >
-                                Close
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <AppointmentDetailsModal
+                appointment={selectedAppointment}
+                showModal={showModal}
+                onClose={() => {
+                    setShowModal(false);
+                    setSelectedAppointment(null);
+                }}
+                onAppointmentUpdate={handleAppointmentUpdate}
+            />
         </div>
     );
 };
