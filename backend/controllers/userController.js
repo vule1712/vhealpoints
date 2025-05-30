@@ -122,13 +122,18 @@ export const getAllDoctors = async (req, res) => {
 export const updateProfile = async(req, res) => {
     try {
         const { userId } = req.user;
-        const { specialization, clinicName, clinicAddress, bloodType, targetUserId } = req.body;
+        const { name, specialization, clinicName, clinicAddress, bloodType, targetUserId } = req.body;
 
         // If targetUserId is provided, this is an admin update
         const userToUpdate = targetUserId ? await userModel.findById(targetUserId) : await userModel.findById(userId);
         
         if (!userToUpdate) {
             return res.json({ success: false, message: 'User not found' });
+        }
+
+        // Update name if provided
+        if (name) {
+            userToUpdate.name = name;
         }
 
         // Update fields based on user role

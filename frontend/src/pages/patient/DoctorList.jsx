@@ -46,57 +46,69 @@ const DoctorList = () => {
 
     if (loading) {
         return (
-            <div className="admin-loading-spinner">
-                <div className="admin-spinner"></div>
+            <div className="bg-white rounded-lg shadow p-6">
+                <h2 className="text-2xl font-bold mb-6">Find Doctors</h2>
+                <div className="animate-pulse space-y-4">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                        <div key={i} className="border-b border-gray-200 pb-4">
+                            <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                            <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                        </div>
+                    ))}
+                </div>
             </div>
         );
     }
 
     if (error) {
         return (
-            <div className="admin-loading-spinner">
-                <div className="text-red-500">{error}</div>
+            <div className="bg-white rounded-lg shadow p-6">
+                <h2 className="text-2xl font-bold mb-6">Find Doctors</h2>
+                <div className="text-red-500 text-center py-4">{error}</div>
             </div>
         );
     }
 
     return (
-        <div>
-            <h1 className="admin-page-title">Find Doctors</h1>
-            <div className="admin-card">
-                {doctors.length === 0 ? (
-                    <div className="p-4 text-center text-gray-500">No doctors found</div>
+        <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-2xl font-bold mb-6">Find Doctors</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {doctors && doctors.length > 0 ? (
+                    doctors.map((doctor) => (
+                        <div
+                            key={doctor._id}
+                            onClick={() => handleDoctorClick(doctor._id)}
+                            className="border rounded-lg p-4 cursor-pointer hover:shadow-md transition-shadow"
+                        >
+                            <div className="flex items-start justify-between">
+                                <div>
+                                    <h3 className="text-lg font-semibold text-gray-900">
+                                        Dr. {doctor.name}
+                                    </h3>
+                                    <p className="text-sm text-gray-500">
+                                        {doctor.specialization}
+                                    </p>
+                                </div>
+                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                    doctor.isAccountVerified ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                                }`}>
+                                    {doctor.isAccountVerified ? 'Verified' : 'Pending'}
+                                </span>
+                            </div>
+                            
+                            <div className="mt-4 space-y-2">
+                                <p className="text-sm text-gray-600">
+                                    <span className="font-medium">Clinic:</span> {doctor.clinicName || 'Not specified'}
+                                </p>
+                                <p className="text-sm text-gray-600">
+                                    <span className="font-medium">Email:</span> {doctor.email}
+                                </p>
+                            </div>
+                        </div>
+                    ))
                 ) : (
-                    <table className="admin-table">
-                        <thead className="admin-table-header">
-                            <tr>
-                                <th className="admin-table-header-cell">No.</th>
-                                <th className="admin-table-header-cell">Doctor Name</th>
-                                <th className="admin-table-header-cell">Specialization</th>
-                                <th className="admin-table-header-cell">Clinic Name</th>
-                                <th className="admin-table-header-cell">Contact Email</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {doctors.map((doctor, index) => (
-                                <tr 
-                                    key={doctor._id || index} 
-                                    className="admin-table-row cursor-pointer hover:bg-gray-50"
-                                    onClick={() => handleDoctorClick(doctor._id)}
-                                >
-                                    <td className="admin-table-cell">{index + 1}</td>
-                                    <td className="admin-table-cell admin-table-cell-bold">{doctor.name || 'N/A'}</td>
-                                    <td className="admin-table-cell">
-                                        <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                                            {doctor.specialization || 'Not specified'}
-                                        </span>
-                                    </td>
-                                    <td className="admin-table-cell">{doctor.clinicName || 'Not specified'}</td>
-                                    <td className="admin-table-cell">{doctor.email || 'N/A'}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                    <p className="text-gray-500 text-center col-span-full py-4">No doctors found</p>
                 )}
             </div>
         </div>

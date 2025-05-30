@@ -84,15 +84,57 @@ const DoctorAppointmentHistory = () => {
 
     const formatDateTime = (dateString) => {
         try {
-            const date = parseISO(dateString);
-            return format(date, 'MMM d, yyyy h:mm a');
+            console.log('Raw date string:', dateString);
+            let date;
+            
+            // If date is already in dd/MM/yyyy format
+            if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateString)) {
+                const [day, month, year] = dateString.split('/');
+                date = new Date(year, month - 1, day);
+            }
+            // If date is in yyyy-MM-dd format
+            else if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+                date = parseISO(dateString);
+            }
+            // If date is in dd-MM-yyyy format
+            else if (/^\d{2}-\d{2}-\d{4}$/.test(dateString)) {
+                const [day, month, year] = dateString.split('-');
+                date = new Date(year, month - 1, day);
+            }
+            // Try parsing as is
+            else {
+                date = new Date(dateString);
+            }
+
+            console.log('Parsed date:', date);
+            
+            if (!isNaN(date.getTime())) {
+                const dayOfWeek = format(date, 'EEEE');
+                const formattedDate = format(date, 'dd/MM/yyyy');
+                return `${dayOfWeek} (${formattedDate})`;
+            }
+            
+            console.error('Invalid date after parsing:', dateString);
+            return 'Invalid date';
         } catch (error) {
+            console.error('Error formatting date:', error, 'Date value:', dateString);
             return 'Invalid date';
         }
     };
 
     const formatTime = (timeString) => {
         try {
+            if (typeof timeString === 'string') {
+                if (timeString.includes('T')) {
+                    return format(new Date(timeString), 'hh:mm a');
+                } else if (timeString.includes(':')) {
+                    const [hours, minutes] = timeString.split(':');
+                    const hour = parseInt(hours, 10);
+                    const ampm = hour >= 12 ? 'PM' : 'AM';
+                    const hour12 = hour % 12 || 12;
+                    return `${hour12.toString().padStart(2, '0')}:${minutes} ${ampm}`;
+                }
+            }
             return format(new Date(timeString), 'hh:mm a');
         } catch (error) {
             return 'Invalid time';
@@ -159,7 +201,6 @@ const DoctorAppointmentHistory = () => {
                         className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                         <option value="all">All Appointments</option>
-                        <option value="Pending">Pending</option>
                         <option value="Confirmed">Confirmed</option>
                         <option value="Completed">Completed</option>
                         <option value="Canceled">Canceled</option>
@@ -208,7 +249,7 @@ const DoctorAppointmentHistory = () => {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="text-sm text-gray-900">
+                                        <div className="text-l font-semibold text-gray-900">
                                             {formatDateTime(appointment.slotId?.date)}
                                         </div>
                                         <div className="text-sm text-gray-500">
@@ -220,7 +261,6 @@ const DoctorAppointmentHistory = () => {
                                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                                             appointment.status === 'Completed' ? 'bg-blue-100 text-blue-800' :
                                             appointment.status === 'Confirmed' ? 'bg-green-100 text-green-800' :
-                                            appointment.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
                                             'bg-red-100 text-red-800'
                                         }`}>
                                             {appointment.status}

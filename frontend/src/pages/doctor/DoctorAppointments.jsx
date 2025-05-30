@@ -24,6 +24,29 @@ const localizer = dateFnsLocalizer({
     locales,
 });
 
+const formatTime = (timeString) => {
+    try {
+        // If time is already in 12-hour format, return it
+        if (/^(0?[1-9]|1[0-2]):[0-5][0-9] (AM|PM)$/.test(timeString)) {
+            return timeString;
+        }
+        // If time is in HH:mm format, convert to 12-hour format
+        if (/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(timeString)) {
+            const [hours, minutes] = timeString.split(':');
+            const hour = parseInt(hours, 10);
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            const hour12 = hour % 12 || 12;
+            return `${hour12.toString().padStart(2, '0')}:${minutes} ${ampm}`;
+        }
+        // If time is a Date object or date string, extract and format the time
+        const date = new Date(timeString);
+        return format(date, 'hh:mm a');
+    } catch (error) {
+        console.error('Error formatting time:', error);
+        return 'Invalid time';
+    }
+};
+
 const DoctorAppointments = () => {
     const { backendUrl } = useContext(AppContext);
     const [appointments, setAppointments] = useState([]);

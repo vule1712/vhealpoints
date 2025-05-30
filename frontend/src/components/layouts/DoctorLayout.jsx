@@ -10,8 +10,7 @@ const DoctorLayout = () => {
         { title: 'Appointments', path: '/doctor/appointments', icon: '📅' },
         { title: 'Slots Management', path: '/doctor/slots', icon: '⏰' },
         { title: 'Patients', path: '/doctor/patients', icon: '👥' },
-        { title: 'Appointment History', path: '/doctor/appointment-history', icon: '🕔' },
-        { title: 'Prescriptions', path: '/doctor/prescriptions', icon: '💊' }
+        { title: 'Appointment History', path: '/doctor/appointment-history', icon: '🕔' }
     ];
 
     return (

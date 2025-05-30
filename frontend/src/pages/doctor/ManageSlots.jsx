@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { AppContext } from '../../context/AppContext';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import { format, addDays } from 'date-fns';
+import { format, addDays, parse } from 'date-fns';
 
 const ManageSlots = () => {
     const { backendUrl } = useContext(AppContext);
@@ -28,6 +28,7 @@ const ManageSlots = () => {
             });
 
             if (response.data.success) {
+                console.log('Received slots:', response.data.slots);
                 setSlots(response.data.slots);
             }
         } catch (error) {
@@ -57,9 +58,27 @@ const ManageSlots = () => {
         e.preventDefault();
 
         try {
+            // Convert times to 12-hour format before sending
+            const [startHours, startMinutes] = newSlot.startTime.split(':');
+            const [endHours, endMinutes] = newSlot.endTime.split(':');
+            
+            const startHour = parseInt(startHours, 10);
+            const endHour = parseInt(endHours, 10);
+            
+            const formattedStartTime = `${startHour % 12 || 12}:${startMinutes} ${startHour >= 12 ? 'PM' : 'AM'}`;
+            const formattedEndTime = `${endHour % 12 || 12}:${endMinutes} ${endHour >= 12 ? 'PM' : 'AM'}`;
+
+            // Convert date to ISO format for MongoDB
+            const isoDate = new Date(newSlot.date).toISOString();
+
             const response = await axios.post(
                 `${backendUrl}/api/appointments/add-slot`,
-                newSlot,
+                {
+                    ...newSlot,
+                    date: isoDate,
+                    startTime: formattedStartTime,
+                    endTime: formattedEndTime
+                },
                 { withCredentials: true }
             );
 
@@ -80,6 +99,10 @@ const ManageSlots = () => {
 
     const formatTime = (time) => {
         try {
+            // If time is already in 12-hour format, return it
+            if (/^(0?[1-9]|1[0-2]):[0-5][0-9] (AM|PM)$/.test(time)) {
+                return time;
+            }
             // If time is a string in HH:mm format
             if (typeof time === 'string') {
                 if (time.includes('T')) {
@@ -88,21 +111,60 @@ const ManageSlots = () => {
                 } else if (time.includes(':')) {
                     // Handle HH:mm format
                     const [hours, minutes] = time.split(':');
-                    const date = new Date();
-                    date.setHours(parseInt(hours, 10));
-                    date.setMinutes(parseInt(minutes, 10));
-                    return format(date, 'hh:mm a');
+                    const hour = parseInt(hours, 10);
+                    const ampm = hour >= 12 ? 'PM' : 'AM';
+                    const hour12 = hour % 12 || 12;
+                    return `${hour12.toString().padStart(2, '0')}:${minutes} ${ampm}`;
                 }
             }
             // If time is a Date object or timestamp
-            const date = new Date(time);
-            if (!isNaN(date.getTime())) {
-                return format(date, 'hh:mm a');
+            if (time instanceof Date || typeof time === 'number') {
+                const date = new Date(time);
+                if (!isNaN(date.getTime())) {
+                    return format(date, 'hh:mm a');
+                }
             }
             return 'Invalid time';
         } catch (error) {
             console.error('Error formatting time:', error, 'Time value:', time);
             return 'Invalid time';
+        }
+    };
+
+    const formatDate = (dateString) => {
+        try {
+            let formattedDate;
+            // If date is already in dd-MM-yyyy format
+            if (/^\d{2}-\d{2}-\d{4}$/.test(dateString)) {
+                const [day, month, year] = dateString.split('-');
+                formattedDate = new Date(year, month - 1, day);
+            }
+            // If date is in yyyy-MM-dd format
+            else if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+                const [year, month, day] = dateString.split('-');
+                formattedDate = new Date(year, month - 1, day);
+            }
+            // If date is in DD/MM/YYYY format
+            else if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateString)) {
+                const [day, month, year] = dateString.split('/');
+                formattedDate = new Date(year, month - 1, day);
+            }
+            // Try parsing the date string
+            else {
+                formattedDate = new Date(dateString);
+            }
+
+            if (!isNaN(formattedDate.getTime())) {
+                const dayOfWeek = format(formattedDate, 'EEEE'); // Full day name
+                const date = format(formattedDate, 'dd/MM/yyyy');
+                return `${dayOfWeek} (${date})`;
+            }
+            
+            console.error('Invalid date format:', dateString);
+            return 'Invalid date';
+        } catch (error) {
+            console.error('Error formatting date:', error, 'Date value:', dateString);
+            return 'Invalid date';
         }
     };
 
@@ -113,27 +175,31 @@ const ManageSlots = () => {
 
             if (typeof slot.startTime === 'string') {
                 if (slot.startTime.includes('T')) {
-                    startTime = format(new Date(slot.startTime), 'HH:mm');
+                    startTime = format(new Date(slot.startTime), 'hh:mm a');
                 } else {
                     startTime = slot.startTime;
                 }
             } else {
-                startTime = format(new Date(slot.startTime), 'HH:mm');
+                startTime = format(new Date(slot.startTime), 'hh:mm a');
             }
 
             if (typeof slot.endTime === 'string') {
                 if (slot.endTime.includes('T')) {
-                    endTime = format(new Date(slot.endTime), 'HH:mm');
+                    endTime = format(new Date(slot.endTime), 'hh:mm a');
                 } else {
                     endTime = slot.endTime;
                 }
             } else {
-                endTime = format(new Date(slot.endTime), 'HH:mm');
+                endTime = format(new Date(slot.endTime), 'hh:mm a');
             }
+
+            // Convert date to yyyy-MM-dd for the input field
+            const [day, month, year] = slot.date.split('-');
+            const inputDate = `${year}-${month}-${day}`;
 
             setEditingSlot({
                 _id: slot._id,
-                date: format(new Date(slot.date), 'yyyy-MM-dd'),
+                date: inputDate,
                 startTime,
                 endTime
             });
@@ -148,9 +214,13 @@ const ManageSlots = () => {
         e.preventDefault();
 
         try {
+            // Convert date back to dd-MM-yyyy format
+            const [year, month, day] = editingSlot.date.split('-');
+            const formattedDate = `${day}-${month}-${year}`;
+
             // Format the date and time values
             const formattedData = {
-                date: editingSlot.date,
+                date: formattedDate,
                 startTime: editingSlot.startTime,
                 endTime: editingSlot.endTime
             };
@@ -226,16 +296,23 @@ const ManageSlots = () => {
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                     Date
                                 </label>
-                                <input
-                                    type="date"
-                                    name="date"
-                                    value={newSlot.date}
-                                    onChange={handleInputChange}
-                                    min={format(new Date(), 'yyyy-MM-dd')}
-                                    max={format(addDays(new Date(), 30), 'yyyy-MM-dd')}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    required
-                                />
+                                <div className="relative">
+                                    <input
+                                        type="date"
+                                        name="date"
+                                        value={newSlot.date}
+                                        onChange={handleInputChange}
+                                        min={format(new Date(), 'yyyy-MM-dd')}
+                                        max={format(addDays(new Date(), 30), 'yyyy-MM-dd')}
+                                        className="w-full h-10 px-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-2 [&::-webkit-calendar-picker-indicator]:top-1/2 [&::-webkit-calendar-picker-indicator]:-translate-y-1/2 [&::-webkit-calendar-picker-indicator]:w-5 [&::-webkit-calendar-picker-indicator]:h-5 [&::-webkit-datetime-edit]:hidden [&::-webkit-datetime-edit-fields-wrapper]:hidden [&::-webkit-datetime-edit-text]:hidden [&::-webkit-datetime-edit-month-field]:hidden [&::-webkit-datetime-edit-day-field]:hidden [&::-webkit-datetime-edit-year-field]:hidden bg-white"
+                                        required
+                                    />
+                                    <div className="absolute inset-0 pointer-events-none flex items-center px-3 pr-10">
+                                        <span className="text-gray-700 text-lg flex items-center h-full mb-1.5">
+                                            {format(new Date(newSlot.date), 'dd/MM/yyyy')}
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -287,7 +364,7 @@ const ManageSlots = () => {
                                     <div className="flex items-center justify-between p-4 border border-gray-200 rounded-md">
                                         <div>
                                             <p className="font-medium">
-                                                {format(new Date(slot.date), 'MMMM d, yyyy')}
+                                                {formatDate(slot.date)}
                                             </p>
                                             <p className="text-gray-600">
                                                 {formatTime(slot.startTime)} - {formatTime(slot.endTime)}

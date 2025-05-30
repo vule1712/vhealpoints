@@ -7,9 +7,7 @@ const DoctorSidebar = () => {
         { path: '/doctor/dashboard', icon: <FaHome />, text: 'Dashboard' },
         { path: '/doctor/profile', icon: <FaUser />, text: 'Profile' },
         { path: '/doctor/appointments', icon: <FaCalendarAlt />, text: 'Appointments' },
-        { path: '/doctor/appointment-history', icon: <FaHistory />, text: 'Appointment History' },
-        { path: '/doctor/availability', icon: <FaClock />, text: 'Availability' },
-        { path: '/doctor/settings', icon: <FaCog />, text: 'Settings' }
+        { path: '/doctor/appointment-history', icon: <FaHistory />, text: 'Appointment History' }
     ];
 
     return (

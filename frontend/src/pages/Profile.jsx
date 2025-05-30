@@ -11,6 +11,7 @@ const Profile = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [formData, setFormData] = useState({
+        name: userData?.name || '',
         specialization: userData?.specialization || '',
         clinicName: userData?.clinicName || '',
         clinicAddress: userData?.clinicAddress || '',
@@ -86,7 +87,18 @@ const Profile = () => {
                                 {userData.name.charAt(0)}
                             </div>
                             <div className="ml-6 text-white">
-                                <h2 className="text-2xl font-bold">{userData.name}</h2>
+                                {isEditing ? (
+                                    <input
+                                        type="text"
+                                        name="name"
+                                        value={formData.name}
+                                        onChange={handleInputChange}
+                                        className="text-2xl font-bold bg-white/10 border border-white/20 rounded px-2 py-1 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50"
+                                        placeholder="Enter your name"
+                                    />
+                                ) : (
+                                    <h2 className="text-2xl font-bold">{userData.name}</h2>
+                                )}
                                 <p className="text-blue-100">{userData.email}</p>
                                 <div className="mt-2">
                                     <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-400 bg-opacity-20">
@@ -172,7 +184,7 @@ const Profile = () => {
                                     </div>
                                 </div>
                             </div>
-                        ) : userData.role === 'Patient' && (
+                        ) : (
                             <div className="space-y-6">
                                 <div className="max-w-md mx-auto">
                                     <div>
@@ -210,6 +222,7 @@ const Profile = () => {
                                         onClick={() => {
                                             setIsEditing(false);
                                             setFormData({
+                                                name: userData.name,
                                                 specialization: userData.specialization || '',
                                                 clinicName: userData.clinicName || '',
                                                 clinicAddress: userData.clinicAddress || '',
