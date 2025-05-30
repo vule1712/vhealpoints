@@ -1,6 +1,6 @@
 # vHealPoint 🩺  
 <p align="center">
-  <img src="frontend/src/assets/vHealPoints2.png" alt="vHealPoint Banner" width="30%" />
+  <img src="frontend/src/assets/vHealPoints2_trans.png" alt="vHealPoint Banner" width="30%" />
 </p>
 <p align="center"><em>A modern web platform to connect patients with doctors and manage clinic appointments seamlessly.</em></p>                                                               
 
