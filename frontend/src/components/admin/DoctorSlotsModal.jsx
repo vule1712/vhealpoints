@@ -52,14 +52,30 @@ const DoctorSlotsModal = ({ doctor, showModal, onClose, onSlotsUpdate }) => {
 
     const formatDateTime = (dateString) => {
         try {
+            let date;
             // Handle dd/MM/yyyy format
             if (dateString.includes('/')) {
                 const [day, month, year] = dateString.split('/');
-                return `${day}-${month}-${year}`;
+                date = new Date(year, month - 1, day);
             }
             // Handle yyyy-MM-dd format
-            const date = new Date(dateString);
-            return format(date, 'dd-MM-yyyy');
+            else if (dateString.includes('-')) {
+                const [year, month, day] = dateString.split('-');
+                date = new Date(year, month - 1, day);
+            }
+            // Try parsing as is
+            else {
+                date = new Date(dateString);
+            }
+
+            if (!isNaN(date.getTime())) {
+                const dayOfWeek = format(date, 'EEEE');
+                const formattedDate = format(date, ' dd/MM/yyyy');
+                return `${dayOfWeek}, ${formattedDate}`;
+            }
+            
+            console.error('Invalid date after parsing:', dateString);
+            return 'Invalid date';
         } catch (error) {
             console.error('Error formatting date:', error);
             return dateString;

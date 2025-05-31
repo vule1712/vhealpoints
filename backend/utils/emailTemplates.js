@@ -61,7 +61,7 @@ const getWelcomeEmailTemplate = (name) => {
         </div>
         <div class="footer">
             <p>This email was sent to you because you registered on vHealPoints.</p>
-            <p>© 2024 vHealPoints. All rights reserved.</p>
+            <p>© 2025 vHealPoints. All rights reserved.</p>
         </div>
     </body>
     </html>
@@ -128,7 +128,7 @@ const getVerificationEmailTemplate = (name, otp) => {
         </div>
         <div class="footer">
             <p>This email was sent to you because you registered on vHealPoints.</p>
-            <p>© 2024 vHealPoints. All rights reserved.</p>
+            <p>© 2025 vHealPoints. All rights reserved.</p>
         </div>
     </body>
     </html>
@@ -200,7 +200,70 @@ const getPasswordResetEmailTemplate = (name, otp) => {
         </div>
         <div class="footer">
             <p>This email was sent to you because you requested a password reset on vHealPoints.</p>
-            <p>© 2024 vHealPoints. All rights reserved.</p>
+            <p>© 2025 vHealPoints. All rights reserved.</p>
+        </div>
+    </body>
+    </html>
+    `;
+};
+
+const getContactFormEmailTemplate = (name, email, message) => {
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 20px;
+            }
+            .header {
+                background-color: #38B6FF;
+                color: white;
+                padding: 20px;
+                text-align: center;
+                border-radius: 5px 5px 0 0;
+            }
+            .content {
+                background-color: #f9f9f9;
+                padding: 20px;
+                border-radius: 0 0 5px 5px;
+            }
+            .message-box {
+                background-color: #fff;
+                border: 2px solid #38B6FF;
+                padding: 15px;
+                margin: 20px 0;
+                border-radius: 5px;
+            }
+            .footer {
+                text-align: center;
+                margin-top: 20px;
+                font-size: 12px;
+                color: #666;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <h1>New Contact Form Submission</h1>
+        </div>
+        <div class="content">
+            <p>You have received a new message from the contact form:</p>
+            <div class="message-box">
+                <p><strong>From:</strong> ${name} (${email})</p>
+                <p><strong>Message:</strong></p>
+                <p>${message}</p>
+            </div>
+            <p>Please respond to this inquiry as soon as possible.</p>
+        </div>
+        <div class="footer">
+            <p>This email was sent from the vHealPoints contact form.</p>
+            <p>© 2025 vHealPoints. All rights reserved.</p>
         </div>
     </body>
     </html>
@@ -210,5 +273,6 @@ const getPasswordResetEmailTemplate = (name, otp) => {
 export {
     getWelcomeEmailTemplate,
     getVerificationEmailTemplate,
-    getPasswordResetEmailTemplate
+    getPasswordResetEmailTemplate,
+    getContactFormEmailTemplate
 }; 

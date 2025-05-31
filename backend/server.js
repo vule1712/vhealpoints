@@ -8,6 +8,7 @@ import userRouter from './routes/userRoutes.js';
 import adminRouter from './routes/adminRoutes.js';
 import appointmentRouter from './routes/appointmentRoutes.js';
 import doctorRouter from './routes/doctorRoutes.js';
+import contactRouter from './routes/contactRoutes.js';
 import './middleware/appointmentStatusUpdater.js';
 
 const app = express();
@@ -29,5 +30,6 @@ app.use('/api/user', userRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/appointments', appointmentRouter);
 app.use('/api/doctor', doctorRouter);
+app.use('/api/contact', contactRouter);
 
 app.listen(PORT, () => {console.log(`Server is running on port ${PORT}`);});

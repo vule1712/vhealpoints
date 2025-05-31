@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { format, parseISO, isValid } from 'date-fns';
-import { toast } from 'react-toastify';
+import { toast } from 'react-hot-toast';
 import axios from 'axios';
 import { AppContext } from '../../context/AppContext';
 

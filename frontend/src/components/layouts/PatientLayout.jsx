@@ -18,7 +18,7 @@ const PatientLayout = () => {
             <NavBar />
             
             {/* Top Navigation Menu */}
-            <div className="bg-white shadow-sm fixed top-[82px] left-0 right-0 z-40">
+            <div className="bg-white shadow-sm fixed top-[80px] left-0 right-0 z-40">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <nav className="flex justify-center space-x-8">
                         {menuItems.map((item) => (

@@ -1,8 +1,47 @@
-import React from 'react'
+import React, { useContext, useState } from 'react'
 import Navbar from '../components/NavBar'
 import Header from '../components/Header'
+import { AppContext } from '../context/AppContext'
+import axios from 'axios'
+import { toast } from 'react-hot-toast'
 
 const Home = () => {
+    const { backendUrl } = useContext(AppContext);
+    const [formData, setFormData] = useState({
+        name: '',
+        email: '',
+        message: ''
+    });
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleInputChange = (e) => {
+        const { id, value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [id]: value
+        }));
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+
+        try {
+            const { data } = await axios.post(backendUrl + '/api/contact/submit', formData);
+            
+            if (data.success) {
+                toast.success(data.message);
+                setFormData({ name: '', email: '', message: '' });
+            } else {
+                toast.error(data.message);
+            }
+        } catch (error) {
+            toast.error(error.message);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     return (
         <div className='relative min-h-screen'>
             {/* Fixed Background */}
@@ -125,21 +164,21 @@ const Home = () => {
                                             </p>
                                         </div>
                                         <div className="space-y-4">
-                                            <div className="flex items-center">
+                                            <div className="flex items-center p-4 bg-white/50 backdrop-blur-sm rounded-lg transition-all duration-300 hover:bg-white/80 hover:shadow-md">
                                                 <span className="text-2xl mr-3">📧</span>
                                                 <div>
                                                     <p className="font-medium text-gray-900">Email</p>
                                                     <p className="text-gray-600">vhealpointsa@gmail.com</p>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center">
+                                            <div className="flex items-center p-4 bg-white/50 backdrop-blur-sm rounded-lg transition-all duration-300 hover:bg-white/80 hover:shadow-md">
                                                 <span className="text-2xl mr-3">📞</span>
                                                 <div>
                                                     <p className="font-medium text-gray-900">Phone</p>
                                                     <p className="text-gray-600">(+84) 834 564 679</p>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center">
+                                            <div className="flex items-center p-4 bg-white/50 backdrop-blur-sm rounded-lg transition-all duration-300 hover:bg-white/80 hover:shadow-md">
                                                 <span className="text-2xl mr-3">📍</span>
                                                 <div>
                                                     <p className="font-medium text-gray-900">Address</p>
@@ -150,40 +189,81 @@ const Home = () => {
                                     </div>
 
                                     {/* Contact Form */}
-                                    <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6 shadow-lg">
-                                        <form className="space-y-4">
-                                            <div>
+                                    <div className="bg-white/90 backdrop-blur-sm rounded-xl p-8 shadow-lg transform transition-all duration-300 hover:shadow-xl">
+                                        <form className="space-y-6" onSubmit={handleSubmit}>
+                                            <div className="space-y-2">
                                                 <label htmlFor="name" className="block text-sm font-medium text-gray-700">Name</label>
+                                                <div className="relative">
                                                 <input
                                                     type="text"
                                                     id="name"
-                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                                        value={formData.name}
+                                                        onChange={handleInputChange}
+                                                        className="block w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
                                                     placeholder="eg. John Doe"
-                                                />
+                                                        required
+                                                    />
+                                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                        <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                        </svg>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div>
+                                            <div className="space-y-2">
                                                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
+                                                <div className="relative">
                                                 <input
                                                     type="email"
                                                     id="email"
-                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                                        value={formData.email}
+                                                        onChange={handleInputChange}
+                                                        className="block w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
                                                     placeholder="eg. johndoe@gmail.com"
-                                                />
+                                                        required
+                                                    />
+                                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                        <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                                        </svg>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div>
+                                            <div className="space-y-2">
                                                 <label htmlFor="message" className="block text-sm font-medium text-gray-700">Message</label>
+                                                <div className="relative">
                                                 <textarea
                                                     id="message"
+                                                        value={formData.message}
+                                                        onChange={handleInputChange}
                                                     rows="4"
-                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                                        className="block w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 resize-none"
                                                     placeholder="Your message"
+                                                        required
                                                 ></textarea>
+                                                    <div className="absolute top-3 left-3 flex items-start pointer-events-none">
+                                                        <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                                                        </svg>
+                                                    </div>
+                                                </div>
                                             </div>
                                             <button
                                                 type="submit"
-                                                className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                                                disabled={isSubmitting}
+                                                className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
                                             >
-                                                Send Message
+                                                {isSubmitting ? (
+                                                    <div className="flex items-center justify-center">
+                                                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                        </svg>
+                                                        Sending...
+                                                    </div>
+                                                ) : (
+                                                    'Send Message'
+                                                )}
                                             </button>
                                         </form>
                                     </div>

@@ -2,7 +2,7 @@ import React, { useContext, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AppContext } from '../context/AppContext';
 import axios from 'axios';
-import { toast } from 'react-toastify';
+import { toast } from 'react-hot-toast';
 import '../styles/components.css';
 
 const Profile = () => {
@@ -117,130 +117,168 @@ const Profile = () => {
                     </div>
 
                     {/* Profile Content */}
-                    <div className="p-6">
-                        {userData.role === 'Doctor' ? (
-                            <div className="space-y-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                Specialization
-                                            </label>
-                                            {isEditing ? (
-                                                <input
-                                                    type="text"
-                                                    name="specialization"
-                                                    value={formData.specialization}
-                                                    onChange={handleInputChange}
-                                                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                                    placeholder="Enter your specialization"
-                                                />
-                                            ) : (
-                                                <div className="px-4 py-2 bg-gray-50 rounded-md">
-                                                    {userData.specialization || 'Not set'}
-                                                </div>
-                                            )}
+                    {userData.role !== 'Admin' ? (
+                        <div className="p-6">
+                            {userData.role === 'Doctor' ? (
+                                <div className="space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    Specialization
+                                                </label>
+                                                {isEditing ? (
+                                                    <input
+                                                        type="text"
+                                                        name="specialization"
+                                                        value={formData.specialization}
+                                                        onChange={handleInputChange}
+                                                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                        placeholder="Enter your specialization"
+                                                    />
+                                                ) : (
+                                                    <div className="px-4 py-2 bg-gray-50 rounded-md">
+                                                        {userData.specialization || 'Not set'}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    Clinic Name
+                                                </label>
+                                                {isEditing ? (
+                                                    <input
+                                                        type="text"
+                                                        name="clinicName"
+                                                        value={formData.clinicName}
+                                                        onChange={handleInputChange}
+                                                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                        placeholder="Enter your clinic name"
+                                                    />
+                                                ) : (
+                                                    <div className="px-4 py-2 bg-gray-50 rounded-md">
+                                                        {userData.clinicName || 'Not set'}
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
 
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                Clinic Name
+                                                Clinic Address
                                             </label>
                                             {isEditing ? (
-                                                <input
-                                                    type="text"
-                                                    name="clinicName"
-                                                    value={formData.clinicName}
+                                                <textarea
+                                                    name="clinicAddress"
+                                                    value={formData.clinicAddress}
                                                     onChange={handleInputChange}
                                                     className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                                    placeholder="Enter your clinic name"
+                                                    placeholder="Enter your clinic address"
+                                                    rows="4"
                                                 />
                                             ) : (
-                                                <div className="px-4 py-2 bg-gray-50 rounded-md">
-                                                    {userData.clinicName || 'Not set'}
+                                                <div className="px-4 py-2 bg-gray-50 rounded-md min-h-[100px]">
+                                                    {userData.clinicAddress || 'Not set'}
                                                 </div>
                                             )}
                                         </div>
                                     </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Clinic Address
-                                        </label>
-                                        {isEditing ? (
-                                            <textarea
-                                                name="clinicAddress"
-                                                value={formData.clinicAddress}
-                                                onChange={handleInputChange}
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                                placeholder="Enter your clinic address"
-                                                rows="4"
-                                            />
-                                        ) : (
-                                            <div className="px-4 py-2 bg-gray-50 rounded-md min-h-[100px]">
-                                                {userData.clinicAddress || 'Not set'}
-                                            </div>
-                                        )}
+                                </div>
+                            ) : userData.role === 'Patient' ? (
+                                <div className="space-y-6">
+                                    <div className="max-w-md mx-auto">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                Blood Type
+                                            </label>
+                                            {isEditing ? (
+                                                <select
+                                                    name="bloodType"
+                                                    value={formData.bloodType}
+                                                    onChange={handleInputChange}
+                                                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                >
+                                                    <option value="">Select Blood Type</option>
+                                                    {bloodTypes.map(type => (
+                                                        <option key={type} value={type}>
+                                                            {type}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            ) : (
+                                                <div className="px-4 py-2 bg-gray-50 rounded-md">
+                                                    {userData.bloodType || 'Not set'}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ) : (
-                            <div className="space-y-6">
-                                <div className="max-w-md mx-auto">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Blood Type
-                                        </label>
-                                        {isEditing ? (
-                                            <select
-                                                name="bloodType"
-                                                value={formData.bloodType}
-                                                onChange={handleInputChange}
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                            >
-                                                <option value="">Select Blood Type</option>
-                                                {bloodTypes.map(type => (
-                                                    <option key={type} value={type}>
-                                                        {type}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        ) : (
-                                            <div className="px-4 py-2 bg-gray-50 rounded-md">
-                                                {userData.bloodType || 'Not set'}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+                            ) : null}
 
-                        <div className="flex justify-center space-x-4 pt-4 border-t mt-6">
+                            <div className="flex justify-center space-x-4 pt-4 border-t mt-6">
+                                {isEditing ? (
+                                    <>
+                                        <button
+                                            onClick={() => {
+                                                setIsEditing(false);
+                                                setFormData({
+                                                    name: userData.name,
+                                                    specialization: userData.specialization || '',
+                                                    clinicName: userData.clinicName || '',
+                                                    clinicAddress: userData.clinicAddress || '',
+                                                    bloodType: userData.bloodType || ''
+                                                });
+                                            }}
+                                            className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            onClick={handleSave}
+                                            disabled={isSaving}
+                                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {isSaving ? 'Saving...' : 'Save Changes'}
+                                        </button>
+                                    </>
+                                ) : (
+                                    <button
+                                        onClick={() => setIsEditing(true)}
+                                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                    >
+                                        Edit Profile
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="flex justify-center space-x-4 p-6 border-t">
                             {isEditing ? (
                                 <>
                                     <button
-                                        onClick={() => {
-                                            setIsEditing(false);
-                                            setFormData({
-                                                name: userData.name,
-                                                specialization: userData.specialization || '',
-                                                clinicName: userData.clinicName || '',
-                                                clinicAddress: userData.clinicAddress || '',
-                                                bloodType: userData.bloodType || ''
-                                            });
-                                        }}
-                                        className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        onClick={handleSave}
-                                        disabled={isSaving}
-                                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        {isSaving ? 'Saving...' : 'Save Changes'}
-                                    </button>
-                                </>
+                                    onClick={() => {
+                                        setIsEditing(false);
+                                        setFormData({
+                                            name: userData.name,
+                                            specialization: userData.specialization || '',
+                                            clinicName: userData.clinicName || '',
+                                            clinicAddress: userData.clinicAddress || '',
+                                            bloodType: userData.bloodType || ''
+                                        });
+                                    }}
+                                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleSave}
+                                    disabled={isSaving}
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isSaving ? 'Saving...' : 'Save Changes'}
+                                </button>
+                            </>
                             ) : (
                                 <button
                                     onClick={() => setIsEditing(true)}
@@ -250,7 +288,7 @@ const Profile = () => {
                                 </button>
                             )}
                         </div>
-                    </div>
+                    )}
                 </div>
             </div>
         </div>

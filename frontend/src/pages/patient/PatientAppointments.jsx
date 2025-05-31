@@ -9,8 +9,9 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import '../../styles/calendar.css';
 import { AppContext } from '../../context/AppContext';
 import axios from 'axios';
-import { toast } from 'react-toastify';
+import { toast } from 'react-hot-toast';
 import AppointmentDetailsModal from '../../components/patient/AppointmentDetailsModal';
+import CalendarToolbar from '../../components/CalendarToolbar';
 
 const locales = {
     'en-US': enUS
@@ -181,6 +182,7 @@ const PatientAppointments = () => {
                     selectable
                     min={new Date(0, 0, 0, 8, 0, 0)} // 8 AM
                     max={new Date(0, 0, 0, 20, 0, 0)} // 8 PM
+                    components={{ toolbar: CalendarToolbar }}
                 />
             </div>
 

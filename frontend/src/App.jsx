@@ -17,8 +17,7 @@ import PatientDashboard from './pages/patient/PatientDashboard'
 import DoctorList from './pages/patient/DoctorList'
 import DoctorProfile from './pages/patient/DoctorProfile'
 import NotFound from './pages/NotFound'
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { Toaster } from 'react-hot-toast';
 import { AppContext } from './context/AppContext';
 import Profile from './pages/Profile'
 import DoctorAppointments from './pages/doctor/DoctorAppointments'
@@ -56,41 +55,15 @@ const ProtectedRoute = ({ children }) => {
 const App = () => {
   return (
     <div>
-      {/* customized toast container */}
-      <ToastContainer
+      {/* react-hot-toast container */}
+      <Toaster
         position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-        style={{ zIndex: 9999 }}
-        toastStyle={{
-          position: 'relative',
-          margin: '0.5rem 0',
-          padding: '0.75rem 1rem',
-          borderRadius: '0.375rem',
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-          backgroundColor: 'white',
-          color: '#1f2937',
-          fontSize: '0.875rem',
-          lineHeight: '1.25rem',
-          maxWidth: '24rem',
-          width: 'auto',
-          zIndex: 9999
-        }}
-        containerStyle={{
-          position: 'fixed',
-          top: '1rem',
-          right: '1rem',
-          zIndex: 9999,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '0.5rem'
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: '#333',
+            color: '#fff',
+          },
         }}
       />
       

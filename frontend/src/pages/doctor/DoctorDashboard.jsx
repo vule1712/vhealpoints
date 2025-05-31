@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { AppContext } from '../../context/AppContext';
 import axios from 'axios';
-import { toast } from 'react-toastify';
+import { toast } from 'react-hot-toast';
 import { format, isToday, parseISO, isValid } from 'date-fns';
 import AppointmentDetailsModal from '../../components/doctor/AppointmentDetailsModal';
 import RecentAppointments from '../../components/doctor/RecentAppointments';

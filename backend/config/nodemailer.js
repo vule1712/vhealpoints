@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import { getWelcomeEmailTemplate, getVerificationEmailTemplate, getPasswordResetEmailTemplate } from '../utils/emailTemplates.js';
+import { getWelcomeEmailTemplate, getVerificationEmailTemplate, getPasswordResetEmailTemplate, getContactFormEmailTemplate } from '../utils/emailTemplates.js';
 
 const transporter = nodemailer.createTransport({
     host: 'smtp-relay.brevo.com',
@@ -64,4 +64,22 @@ const sendPasswordResetEmail = async (email, name, otp) => {
     }
 };
 
-export { transporter, sendWelcomeEmail, sendVerificationEmail, sendPasswordResetEmail };
+// Send contact form email
+const sendContactFormEmail = async (name, email, message) => {
+    try {
+        const mailOptions = {
+            from: process.env.SENDER_EMAIL,
+            to: 'vulephuonganh@gmail.com',
+            subject: 'New Contact Form Submission - vHealPoints',
+            html: getContactFormEmailTemplate(name, email, message)
+        };
+
+        await transporter.sendMail(mailOptions);
+        return true;
+    } catch (error) {
+        console.error('Error sending contact form email:', error);
+        return false;
+    }
+};
+
+export { transporter, sendWelcomeEmail, sendVerificationEmail, sendPasswordResetEmail, sendContactFormEmail };

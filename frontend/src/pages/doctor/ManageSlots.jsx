@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AppContext } from '../../context/AppContext';
 import axios from 'axios';
-import { toast } from 'react-toastify';
+import { toast } from 'react-hot-toast';
 import { format, addDays, parse } from 'date-fns';
 
 const ManageSlots = () => {
@@ -58,13 +58,56 @@ const ManageSlots = () => {
         e.preventDefault();
 
         try {
-            // Convert times to 12-hour format before sending
+            // Validate date
+            const slotDate = new Date(newSlot.date);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            if (slotDate < today) {
+                toast.error('Cannot add slots for past dates');
+                return;
+            }
+
+            // Check if slot is for today and time has passed
+            if (slotDate.getTime() === today.getTime()) {
+                const currentTime = new Date();
+                const [startHours, startMinutes] = newSlot.startTime.split(':');
+                const slotStartTime = new Date();
+                slotStartTime.setHours(parseInt(startHours), parseInt(startMinutes), 0, 0);
+
+                if (slotStartTime < currentTime) {
+                    toast.error('Cannot add slots for past times today');
+                    return;
+                }
+            }
+
+            // Validate time format
             const [startHours, startMinutes] = newSlot.startTime.split(':');
             const [endHours, endMinutes] = newSlot.endTime.split(':');
             
             const startHour = parseInt(startHours, 10);
             const endHour = parseInt(endHours, 10);
             
+            if (isNaN(startHour) || isNaN(endHour)) {
+                toast.error('Invalid time format');
+                return;
+            }
+
+            // Validate time range
+            if (startHour < 0 || startHour > 23 || endHour < 0 || endHour > 23) {
+                toast.error('Time must be between 00:00 and 23:59');
+                return;
+            }
+
+            // Validate end time is after start time
+            const startTime = new Date(`2000-01-01T${newSlot.startTime}`);
+            const endTime = new Date(`2000-01-01T${newSlot.endTime}`);
+            if (endTime <= startTime) {
+                toast.error('End time must be after start time');
+                return;
+            }
+
+            // Convert times to 12-hour format
             const formattedStartTime = `${startHour % 12 || 12}:${startMinutes} ${startHour >= 12 ? 'PM' : 'AM'}`;
             const formattedEndTime = `${endHour % 12 || 12}:${endMinutes} ${endHour >= 12 ? 'PM' : 'AM'}`;
 
@@ -93,7 +136,21 @@ const ManageSlots = () => {
                 });
             }
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to add slot');
+            console.error('Error adding slot:', error);
+            const errorMessage = error.response?.data?.message;
+            if (errorMessage) {
+                if (errorMessage.includes('overlaps')) {
+                    toast.error('This slot overlaps with an existing slot');
+                } else if (errorMessage.includes('past dates')) {
+                    toast.error('Cannot add slots for past dates');
+                } else if (errorMessage.includes('time format')) {
+                    toast.error('Invalid time format');
+                } else {
+                    toast.error(errorMessage);
+                }
+            } else {
+                toast.error('Failed to add slot. Please try again.');
+            }
         }
     };
 

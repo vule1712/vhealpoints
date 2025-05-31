@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AppContext } from '../../context/AppContext';
 import axios from 'axios';
-import { toast } from 'react-toastify';
+import toast from 'react-hot-toast';
 import { format, parseISO } from 'date-fns';
 
 const DoctorAppointmentHistory = () => {
@@ -124,17 +124,23 @@ const DoctorAppointmentHistory = () => {
 
     const formatTime = (timeString) => {
         try {
-            if (typeof timeString === 'string') {
-                if (timeString.includes('T')) {
-                    return format(new Date(timeString), 'hh:mm a');
-                } else if (timeString.includes(':')) {
-                    const [hours, minutes] = timeString.split(':');
-                    const hour = parseInt(hours, 10);
-                    const ampm = hour >= 12 ? 'PM' : 'AM';
-                    const hour12 = hour % 12 || 12;
-                    return `${hour12.toString().padStart(2, '0')}:${minutes} ${ampm}`;
-                }
+            // If already in 12-hour format, return as is
+            if (/^(0?[1-9]|1[0-2]):[0-5][0-9] (AM|PM)$/i.test(timeString)) {
+                return timeString;
             }
+            // If in 24-hour format, convert to 12-hour format
+            if (/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(timeString)) {
+                const [hours, minutes] = timeString.split(':');
+                const hour = parseInt(hours, 10);
+                const ampm = hour >= 12 ? 'PM' : 'AM';
+                const hour12 = hour % 12 || 12;
+                return `${hour12.toString().padStart(2, '0')}:${minutes} ${ampm}`;
+            }
+            // If ISO or Date string, format accordingly
+            if (typeof timeString === 'string' && timeString.includes('T')) {
+                return format(new Date(timeString), 'hh:mm a');
+            }
+            // Fallback: try to parse as Date
             return format(new Date(timeString), 'hh:mm a');
         } catch (error) {
             return 'Invalid time';
