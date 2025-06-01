@@ -2,19 +2,22 @@ import React, { useState, useEffect, useContext } from 'react';
 import { AppContext } from '../../context/AppContext';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
-import { format, addDays, parse } from 'date-fns';
+import { format, addDays } from 'date-fns';
+import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
 
 const ManageSlots = () => {
     const { backendUrl } = useContext(AppContext);
     const [slots, setSlots] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [newSlot, setNewSlot] = useState({
+    const [formData, setFormData] = useState({
         date: format(new Date(), 'yyyy-MM-dd'),
         startTime: '09:00',
         endTime: '10:00'
     });
     const [editingSlot, setEditingSlot] = useState(null);
-    const [showEditForm, setShowEditForm] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [slotToDelete, setSlotToDelete] = useState(null);
 
     useEffect(() => {
         fetchSlots();
@@ -28,7 +31,6 @@ const ManageSlots = () => {
             });
 
             if (response.data.success) {
-                console.log('Received slots:', response.data.slots);
                 setSlots(response.data.slots);
             }
         } catch (error) {
@@ -41,132 +43,232 @@ const ManageSlots = () => {
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        if (showEditForm) {
-            setEditingSlot(prev => ({
-                ...prev,
-                [name]: value
-            }));
-        } else {
-            setNewSlot(prev => ({
-                ...prev,
-                [name]: value
-            }));
-        }
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
     };
 
-    const handleAddSlot = async (e) => {
-        e.preventDefault();
+    const validateSlot = (isEdit = false) => {
+        const slotDate = new Date(formData.date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
-        try {
-            // Validate date
-            const slotDate = new Date(newSlot.date);
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
+        if (slotDate < today) {
+            toast.error('Cannot add slots for past dates');
+            return false;
+        }
 
-            if (slotDate < today) {
-                toast.error('Cannot add slots for past dates');
-                return;
+        if (slotDate.getTime() === today.getTime()) {
+            const currentTime = new Date();
+            const [startHours, startMinutes] = formData.startTime.split(':');
+            const slotStartTime = new Date();
+            slotStartTime.setHours(parseInt(startHours), parseInt(startMinutes), 0, 0);
+
+            if (slotStartTime < currentTime) {
+                toast.error('Cannot add slots for past times today');
+                return false;
             }
+        }
 
-            // Check if slot is for today and time has passed
-            if (slotDate.getTime() === today.getTime()) {
-                const currentTime = new Date();
-                const [startHours, startMinutes] = newSlot.startTime.split(':');
-                const slotStartTime = new Date();
-                slotStartTime.setHours(parseInt(startHours), parseInt(startMinutes), 0, 0);
+        const [startHours, startMinutes] = formData.startTime.split(':');
+        const [endHours, endMinutes] = formData.endTime.split(':');
+        const startHour = parseInt(startHours, 10);
+        const endHour = parseInt(endHours, 10);
+        if (isNaN(startHour) || isNaN(endHour)) {
+            toast.error('Invalid time format');
+            return false;
+        }
+        if (startHour < 0 || startHour > 23 || endHour < 0 || endHour > 23) {
+            toast.error('Time must be between 00:00 and 23:59');
+            return false;
+        }
+        const startTime = new Date(`2000-01-01T${formData.startTime}`);
+        const endTime = new Date(`2000-01-01T${formData.endTime}`);
+        if (endTime <= startTime) {
+            toast.error('End time must be after start time');
+            return false;
+        }
 
-                if (slotStartTime < currentTime) {
-                    toast.error('Cannot add slots for past times today');
-                    return;
+        // Prevent overlapping slots
+        const isOverlapping = slots.some(slot => {
+            // If editing, skip the slot being edited
+            if (isEdit && editingSlot && slot._id === editingSlot._id) return false;
+            // Compare date
+            let slotDateStr = '';
+            if (slot.date.includes('/')) {
+                const [day, month, year] = slot.date.split('/');
+                slotDateStr = `${year}-${month}-${day}`;
+            } else if (slot.date.includes('-')) {
+                const [year, month, day] = slot.date.split('-');
+                slotDateStr = `${year}-${month}-${day}`;
+            } else {
+                slotDateStr = format(new Date(slot.date), 'yyyy-MM-dd');
+            }
+            if (slotDateStr !== formData.date) return false;
+
+            // Convert times to minutes for comparison
+            const toMinutes = (t) => {
+                if (t.includes('AM') || t.includes('PM')) {
+                    const [time, modifier] = t.split(' ');
+                    let [h, m] = time.split(':');
+                    h = parseInt(h, 10);
+                    if (h === 12) h = 0;
+                    if (modifier === 'PM') h += 12;
+                    return h * 60 + parseInt(m, 10);
+                } else {
+                    const [h, m] = t.split(':');
+                    return parseInt(h, 10) * 60 + parseInt(m, 10);
+                }
+            };
+            const slotStart = toMinutes(slot.startTime);
+            const slotEnd = toMinutes(slot.endTime);
+            const newStart = toMinutes(formData.startTime);
+            const newEnd = toMinutes(formData.endTime);
+            // Check for overlap
+            return (newStart < slotEnd && newEnd > slotStart);
+        });
+        if (isOverlapping) {
+            toast.error('There is already a slot at this time. Please choose a different time.');
+            return false;
+        }
+
+        return true;
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        const isEdit = Boolean(editingSlot);
+        if (!validateSlot(isEdit)) return;
+
+        setIsSubmitting(true);
+        try {
+            const [startHours, startMinutes] = formData.startTime.split(':');
+            const [endHours, endMinutes] = formData.endTime.split(':');
+            const startHour = parseInt(startHours, 10);
+            const endHour = parseInt(endHours, 10);
+
+            const formattedStartTime = `${startHour % 12 || 12}:${startMinutes} ${startHour >= 12 ? 'PM' : 'AM'}`;
+            const formattedEndTime = `${endHour % 12 || 12}:${endMinutes} ${endHour >= 12 ? 'PM' : 'AM'}`;
+            const isoDate = new Date(formData.date).toISOString();
+
+            if (editingSlot) {
+                const response = await axios.put(
+                    `${backendUrl}/api/appointments/slot/${editingSlot._id}`,
+                    {
+                        ...formData,
+                        date: isoDate,
+                        startTime: formattedStartTime,
+                        endTime: formattedEndTime
+                    },
+                    { withCredentials: true }
+                );
+
+                if (response.data.success) {
+                    toast.success('Slot updated successfully');
+                    fetchSlots();
+                    setEditingSlot(null);
+                }
+            } else {
+                const response = await axios.post(
+                    `${backendUrl}/api/appointments/add-slot`,
+                    {
+                        ...formData,
+                        date: isoDate,
+                        startTime: formattedStartTime,
+                        endTime: formattedEndTime
+                    },
+                    { withCredentials: true }
+                );
+
+                if (response.data.success) {
+                    toast.success('Slot added successfully');
+                    fetchSlots();
                 }
             }
 
-            // Validate time format
-            const [startHours, startMinutes] = newSlot.startTime.split(':');
-            const [endHours, endMinutes] = newSlot.endTime.split(':');
-            
-            const startHour = parseInt(startHours, 10);
-            const endHour = parseInt(endHours, 10);
-            
-            if (isNaN(startHour) || isNaN(endHour)) {
-                toast.error('Invalid time format');
-                return;
+            setFormData({
+                date: format(new Date(), 'yyyy-MM-dd'),
+                startTime: '09:00',
+                endTime: '10:00'
+            });
+        } catch (error) {
+            console.error('Error saving slot:', error);
+            toast.error(error.response?.data?.message || 'Failed to save slot');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleEditClick = (slot) => {
+        setEditingSlot(slot);
+        
+        // Convert date to yyyy-MM-dd format
+        let formattedDate;
+        if (slot.date.includes('/')) {
+            const [day, month, year] = slot.date.split('/');
+            formattedDate = `${year}-${month}-${day}`;
+        } else if (slot.date.includes('-')) {
+            const [day, month, year] = slot.date.split('-');
+            formattedDate = `${year}-${month}-${day}`;
+        } else {
+            formattedDate = format(new Date(slot.date), 'yyyy-MM-dd');
+        }
+
+        // Convert time from 12-hour to 24-hour format
+        const convertTo24Hour = (time12h) => {
+            const [time, modifier] = time12h.split(' ');
+            let [hours, minutes] = time.split(':');
+            hours = parseInt(hours);
+            if (hours === 12) {
+                hours = modifier === 'PM' ? 12 : 0;
+            } else {
+                hours = modifier === 'PM' ? hours + 12 : hours;
             }
+            return `${hours.toString().padStart(2, '0')}:${minutes}`;
+        };
 
-            // Validate time range
-            if (startHour < 0 || startHour > 23 || endHour < 0 || endHour > 23) {
-                toast.error('Time must be between 00:00 and 23:59');
-                return;
-            }
+        setFormData({
+            date: formattedDate,
+            startTime: convertTo24Hour(slot.startTime),
+            endTime: convertTo24Hour(slot.endTime)
+        });
+    };
 
-            // Validate end time is after start time
-            const startTime = new Date(`2000-01-01T${newSlot.startTime}`);
-            const endTime = new Date(`2000-01-01T${newSlot.endTime}`);
-            if (endTime <= startTime) {
-                toast.error('End time must be after start time');
-                return;
-            }
+    const handleDeleteClick = (slot) => {
+        setSlotToDelete(slot);
+        setShowDeleteModal(true);
+    };
 
-            // Convert times to 12-hour format
-            const formattedStartTime = `${startHour % 12 || 12}:${startMinutes} ${startHour >= 12 ? 'PM' : 'AM'}`;
-            const formattedEndTime = `${endHour % 12 || 12}:${endMinutes} ${endHour >= 12 ? 'PM' : 'AM'}`;
-
-            // Convert date to ISO format for MongoDB
-            const isoDate = new Date(newSlot.date).toISOString();
-
-            const response = await axios.post(
-                `${backendUrl}/api/appointments/add-slot`,
-                {
-                    ...newSlot,
-                    date: isoDate,
-                    startTime: formattedStartTime,
-                    endTime: formattedEndTime
-                },
+    const handleDeleteConfirm = async () => {
+        if (!slotToDelete) return;
+        try {
+            const response = await axios.delete(
+                `${backendUrl}/api/appointments/slot/${slotToDelete._id}`,
                 { withCredentials: true }
             );
 
             if (response.data.success) {
-                toast.success('Slot added successfully');
+                toast.success('Slot deleted successfully');
                 fetchSlots();
-                // Reset form
-                setNewSlot({
-                    date: format(new Date(), 'yyyy-MM-dd'),
-                    startTime: '09:00',
-                    endTime: '10:00'
-                });
             }
         } catch (error) {
-            console.error('Error adding slot:', error);
-            const errorMessage = error.response?.data?.message;
-            if (errorMessage) {
-                if (errorMessage.includes('overlaps')) {
-                    toast.error('This slot overlaps with an existing slot');
-                } else if (errorMessage.includes('past dates')) {
-                    toast.error('Cannot add slots for past dates');
-                } else if (errorMessage.includes('time format')) {
-                    toast.error('Invalid time format');
-                } else {
-                    toast.error(errorMessage);
-                }
-            } else {
-                toast.error('Failed to add slot. Please try again.');
-            }
+            toast.error(error.response?.data?.message || 'Failed to delete slot');
+        } finally {
+            setShowDeleteModal(false);
+            setSlotToDelete(null);
         }
     };
 
     const formatTime = (time) => {
         try {
-            // If time is already in 12-hour format, return it
             if (/^(0?[1-9]|1[0-2]):[0-5][0-9] (AM|PM)$/.test(time)) {
                 return time;
             }
-            // If time is a string in HH:mm format
             if (typeof time === 'string') {
                 if (time.includes('T')) {
-                    // Handle ISO string format
                     return format(new Date(time), 'hh:mm a');
                 } else if (time.includes(':')) {
-                    // Handle HH:mm format
                     const [hours, minutes] = time.split(':');
                     const hour = parseInt(hours, 10);
                     const ampm = hour >= 12 ? 'PM' : 'AM';
@@ -174,7 +276,6 @@ const ManageSlots = () => {
                     return `${hour12.toString().padStart(2, '0')}:${minutes} ${ampm}`;
                 }
             }
-            // If time is a Date object or timestamp
             if (time instanceof Date || typeof time === 'number') {
                 const date = new Date(time);
                 if (!isNaN(date.getTime())) {
@@ -191,33 +292,25 @@ const ManageSlots = () => {
     const formatDate = (dateString) => {
         try {
             let formattedDate;
-            // If date is already in dd-MM-yyyy format
             if (/^\d{2}-\d{2}-\d{4}$/.test(dateString)) {
                 const [day, month, year] = dateString.split('-');
                 formattedDate = new Date(year, month - 1, day);
-            }
-            // If date is in yyyy-MM-dd format
-            else if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+            } else if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
                 const [year, month, day] = dateString.split('-');
                 formattedDate = new Date(year, month - 1, day);
-            }
-            // If date is in DD/MM/YYYY format
-            else if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateString)) {
+            } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateString)) {
                 const [day, month, year] = dateString.split('/');
                 formattedDate = new Date(year, month - 1, day);
-            }
-            // Try parsing the date string
-            else {
+            } else {
                 formattedDate = new Date(dateString);
             }
 
             if (!isNaN(formattedDate.getTime())) {
-                const dayOfWeek = format(formattedDate, 'EEEE'); // Full day name
+                const dayOfWeek = format(formattedDate, 'EEEE');
                 const date = format(formattedDate, 'dd/MM/yyyy');
                 return `${dayOfWeek} (${date})`;
             }
             
-            console.error('Invalid date format:', dateString);
             return 'Invalid date';
         } catch (error) {
             console.error('Error formatting date:', error, 'Date value:', dateString);
@@ -225,109 +318,61 @@ const ManageSlots = () => {
         }
     };
 
-    const handleEditClick = (slot) => {
-        try {
-            // Parse the time values correctly
-            let startTime, endTime;
-
-            if (typeof slot.startTime === 'string') {
-                if (slot.startTime.includes('T')) {
-                    startTime = format(new Date(slot.startTime), 'hh:mm a');
-                } else {
-                    startTime = slot.startTime;
-                }
-            } else {
-                startTime = format(new Date(slot.startTime), 'hh:mm a');
-            }
-
-            if (typeof slot.endTime === 'string') {
-                if (slot.endTime.includes('T')) {
-                    endTime = format(new Date(slot.endTime), 'hh:mm a');
-                } else {
-                    endTime = slot.endTime;
-                }
-            } else {
-                endTime = format(new Date(slot.endTime), 'hh:mm a');
-            }
-
-            // Convert date to yyyy-MM-dd for the input field
-            const [day, month, year] = slot.date.split('-');
-            const inputDate = `${year}-${month}-${day}`;
-
-            setEditingSlot({
-                _id: slot._id,
-                date: inputDate,
-                startTime,
-                endTime
-            });
-            setShowEditForm(true);
-        } catch (error) {
-            console.error('Error setting edit slot:', error);
-            toast.error('Error preparing slot for editing');
-        }
+    // Helper function to check if an appointment is ongoing
+    const isAppointmentOngoing = (date, startTime, endTime) => {
+        const yyyyMmDd = new Date(date).toISOString().split('T')[0];
+        const start = new Date(`${yyyyMmDd}T${startTime}:00+07:00`);
+        const end = new Date(`${yyyyMmDd}T${endTime}:00+07:00`);
+        const now = new Date();
+        return now >= start && now <= end;
     };
 
-    const handleEditSubmit = async (e) => {
-        e.preventDefault();
-
+    // Updated canModifySlot logic (admin style)
+    const canModifySlot = (slot) => {
         try {
-            // Convert date back to dd-MM-yyyy format
-            const [year, month, day] = editingSlot.date.split('-');
-            const formattedDate = `${day}-${month}-${year}`;
+            if (slot.isBooked) return false;
 
-            // Format the date and time values
-            const formattedData = {
-                date: formattedDate,
-                startTime: editingSlot.startTime,
-                endTime: editingSlot.endTime
+            // Parse the date string (support dd/MM/yyyy and yyyy-MM-dd)
+            let date;
+            if (slot.date.includes('/')) {
+                const [day, month, year] = slot.date.split('/');
+                date = `${year}-${month}-${day}`;
+            } else if (slot.date.includes('-')) {
+                const [year, month, day] = slot.date.split('-');
+                date = `${year}-${month}-${day}`;
+            } else {
+                date = format(new Date(slot.date), 'yyyy-MM-dd');
+            }
+
+            // Convert time from 12-hour format to 24-hour format if needed
+            const convertTo24Hour = (time12h) => {
+                if (!time12h) return '00:00';
+                if (time12h.includes(':') && (time12h.includes('AM') || time12h.includes('PM'))) {
+                    const [time, modifier] = time12h.split(' ');
+                    let [hours, minutes] = time.split(':');
+                    hours = parseInt(hours, 10);
+                    if (hours === 12) hours = 0;
+                    if (modifier === 'PM') hours += 12;
+                    return `${hours.toString().padStart(2, '0')}:${minutes}`;
+                }
+                return time12h;
             };
 
-            setLoading(true);
-            const response = await axios.put(
-                `${backendUrl}/api/appointments/slot/${editingSlot._id}`,
-                formattedData,
-                { withCredentials: true }
-            );
+            const startTime = convertTo24Hour(slot.startTime);
+            const endTime = convertTo24Hour(slot.endTime);
 
-            if (response.data.success) {
-                const message = response.data.slot.isBooked 
-                    ? 'Slot updated successfully. The patient will be notified of the time change.'
-                    : 'Slot updated successfully';
-                toast.success(message);
-                
-                // Update the slots list with the new data
-                setSlots(prevSlots => 
-                    prevSlots.map(slot => 
-                        slot._id === editingSlot._id ? response.data.slot : slot
-                    )
-                );
+            // Check if the appointment is ongoing
+            const isOngoing = isAppointmentOngoing(date, startTime, endTime);
 
-                // Close the edit form
-                setShowEditForm(false);
-                setEditingSlot(null);
-            }
+            // Allow modification if the slot is ongoing or hasn't started yet
+            const yyyyMmDd = new Date(date).toISOString().split('T')[0];
+            const start = new Date(`${yyyyMmDd}T${startTime}:00+07:00`);
+            const now = new Date();
+
+            return isOngoing || now < start;
         } catch (error) {
-            console.error('Error updating slot:', error);
-            const errorMessage = error.response?.data?.message || 'Failed to update slot';
-            toast.error(errorMessage);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleDeleteSlot = async (slotId) => {
-        try {
-            const response = await axios.delete(
-                `${backendUrl}/api/appointments/slot/${slotId}`,
-                { withCredentials: true }
-            );
-
-            if (response.data.success) {
-                toast.success('Slot deleted successfully');
-                fetchSlots();
-            }
-        } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to delete slot');
+            console.error('Error checking slot modification:', error);
+            return false;
         }
     };
 
@@ -347,29 +392,22 @@ const ManageSlots = () => {
                 {/* Add New Slot Form */}
                 <div className="bg-white rounded-lg shadow-md p-6 mb-8">
                     <h2 className="text-lg font-semibold mb-4">Add New Slot</h2>
-                    <form onSubmit={handleAddSlot} className="space-y-4">
+                    <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                     Date
                                 </label>
-                                <div className="relative">
-                                    <input
-                                        type="date"
-                                        name="date"
-                                        value={newSlot.date}
-                                        onChange={handleInputChange}
-                                        min={format(new Date(), 'yyyy-MM-dd')}
-                                        max={format(addDays(new Date(), 30), 'yyyy-MM-dd')}
-                                        className="w-full h-10 px-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-2 [&::-webkit-calendar-picker-indicator]:top-1/2 [&::-webkit-calendar-picker-indicator]:-translate-y-1/2 [&::-webkit-calendar-picker-indicator]:w-5 [&::-webkit-calendar-picker-indicator]:h-5 [&::-webkit-datetime-edit]:hidden [&::-webkit-datetime-edit-fields-wrapper]:hidden [&::-webkit-datetime-edit-text]:hidden [&::-webkit-datetime-edit-month-field]:hidden [&::-webkit-datetime-edit-day-field]:hidden [&::-webkit-datetime-edit-year-field]:hidden bg-white"
-                                        required
-                                    />
-                                    <div className="absolute inset-0 pointer-events-none flex items-center px-3 pr-10">
-                                        <span className="text-gray-700 text-lg flex items-center h-full mb-1.5">
-                                            {format(new Date(newSlot.date), 'dd/MM/yyyy')}
-                                        </span>
-                                    </div>
-                                </div>
+                                <input
+                                    type="date"
+                                    name="date"
+                                    value={formData.date}
+                                    onChange={handleInputChange}
+                                    min={format(new Date(), 'yyyy-MM-dd')}
+                                    max={format(addDays(new Date(), 30), 'yyyy-MM-dd')}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    required
+                                />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -378,7 +416,7 @@ const ManageSlots = () => {
                                 <input
                                     type="time"
                                     name="startTime"
-                                    value={newSlot.startTime}
+                                    value={formData.startTime}
                                     onChange={handleInputChange}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     required
@@ -391,7 +429,7 @@ const ManageSlots = () => {
                                 <input
                                     type="time"
                                     name="endTime"
-                                    value={newSlot.endTime}
+                                    value={formData.endTime}
                                     onChange={handleInputChange}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     required
@@ -401,9 +439,10 @@ const ManageSlots = () => {
                         <div className="flex justify-end">
                             <button
                                 type="submit"
-                                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+                                disabled={isSubmitting}
                             >
-                                Add Slot
+                                {isSubmitting ? 'Saving...' : 'Add Slot'}
                             </button>
                         </div>
                     </form>
@@ -433,27 +472,31 @@ const ManageSlots = () => {
                                             </p>
                                         </div>
                                         <div className="flex space-x-2">
-                                            <button
-                                                onClick={() => handleEditClick(slot)}
-                                                className="px-3 py-1 text-blue-600 hover:text-blue-800 focus:outline-none"
-                                            >
-                                                Edit
-                                            </button>
-                                            {!slot.isBooked && (
-                                                <button
-                                                    onClick={() => handleDeleteSlot(slot._id)}
-                                                    className="px-3 py-1 text-red-600 hover:text-red-800 focus:outline-none"
-                                                >
-                                                    Delete
-                                                </button>
+                                            {canModifySlot(slot) && (
+                                                <>
+                                                    <button
+                                                        onClick={() => handleEditClick(slot)}
+                                                        className="px-3 py-1 text-blue-600 hover:text-blue-800 focus:outline-none"
+                                                    >
+                                                        Edit
+                                                    </button>
+                                                    {!slot.isBooked && (
+                                                        <button
+                                                            onClick={() => handleDeleteClick(slot)}
+                                                            className="px-3 py-1 text-red-600 hover:text-red-800 focus:outline-none"
+                                                        >
+                                                            Delete
+                                                        </button>
+                                                    )}
+                                                </>
                                             )}
                                         </div>
                                     </div>
                                     
                                     {/* Edit Form - Inline under the slot */}
-                                    {showEditForm && editingSlot && editingSlot._id === slot._id && (
+                                    {editingSlot && editingSlot._id === slot._id && (
                                         <div className="mt-2 p-4 border border-blue-200 rounded-md bg-blue-50">
-                                            <form onSubmit={handleEditSubmit} className="space-y-4">
+                                            <form onSubmit={handleSubmit} className="space-y-4">
                                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                                     <div>
                                                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -462,7 +505,7 @@ const ManageSlots = () => {
                                                         <input
                                                             type="date"
                                                             name="date"
-                                                            value={editingSlot.date}
+                                                            value={formData.date}
                                                             onChange={handleInputChange}
                                                             min={format(new Date(), 'yyyy-MM-dd')}
                                                             max={format(addDays(new Date(), 30), 'yyyy-MM-dd')}
@@ -477,7 +520,7 @@ const ManageSlots = () => {
                                                         <input
                                                             type="time"
                                                             name="startTime"
-                                                            value={editingSlot.startTime}
+                                                            value={formData.startTime}
                                                             onChange={handleInputChange}
                                                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                             required
@@ -490,29 +533,34 @@ const ManageSlots = () => {
                                                         <input
                                                             type="time"
                                                             name="endTime"
-                                                            value={editingSlot.endTime}
+                                                            value={formData.endTime}
                                                             onChange={handleInputChange}
                                                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                             required
                                                         />
                                                     </div>
                                                 </div>
-                                                <div className="flex justify-end space-x-4">
+                                                <div className="flex justify-end space-x-3">
                                                     <button
                                                         type="button"
                                                         onClick={() => {
-                                                            setShowEditForm(false);
                                                             setEditingSlot(null);
+                                                            setFormData({
+                                                                date: format(new Date(), 'yyyy-MM-dd'),
+                                                                startTime: '09:00',
+                                                                endTime: '10:00'
+                                                            });
                                                         }}
-                                                        className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                                                        className="px-4 py-2 text-gray-600 hover:text-gray-700 font-medium"
                                                     >
                                                         Cancel
                                                     </button>
                                                     <button
                                                         type="submit"
-                                                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+                                                        disabled={isSubmitting}
                                                     >
-                                                        Update Slot
+                                                        {isSubmitting ? 'Saving...' : 'Update Slot'}
                                                     </button>
                                                 </div>
                                             </form>
@@ -524,6 +572,14 @@ const ManageSlots = () => {
                     )}
                 </div>
             </div>
+
+            <DeleteConfirmationModal
+                showModal={showDeleteModal}
+                onClose={() => setShowDeleteModal(false)}
+                onConfirm={handleDeleteConfirm}
+                title="Delete Time Slot"
+                message="Are you sure you want to delete this time slot? This action cannot be undone."
+            />
         </div>
     );
 };

@@ -154,6 +154,57 @@ const BookAppointment = () => {
         }
     });
 
+    // Check if a slot is available for booking
+    const isSlotPassed = (slot) => {
+        try {
+            // Parse the date string (which is in dd/MM/yyyy format)
+            const [day, month, year] = slot.date.split('/');
+            const date = `${year}-${month}-${day}`;
+
+            // Convert time from 12-hour format to 24-hour format if needed
+            const convertTo24Hour = (time12h) => {
+                const [time, modifier] = time12h.split(' ');
+                let [hours, minutes] = time.split(':');
+                hours = parseInt(hours, 10);
+                
+                if (hours === 12) {
+                    hours = 0;
+                }
+                if (modifier === 'PM') {
+                    hours += 12;
+                }
+                
+                return `${hours.toString().padStart(2, '0')}:${minutes}`;
+            };
+
+            const startTime = convertTo24Hour(slot.startTime);
+            const endTime = convertTo24Hour(slot.endTime);
+
+            // Check if the appointment is ongoing
+            const isOngoing = isAppointmentOngoing(date, startTime, endTime);
+
+            // Slot is passed if it's not ongoing and the end time has passed
+            const yyyyMmDd = new Date(date).toISOString().split('T')[0];
+            const end = new Date(`${yyyyMmDd}T${endTime}:00+07:00`);
+            const now = new Date();
+
+            return !isOngoing && now > end;
+        } catch (error) {
+            console.error('Error checking slot time:', error);
+            return true; // If there's an error, consider the slot as passed to be safe
+        }
+    };
+
+    // Helper function to check if an appointment is ongoing
+    const isAppointmentOngoing = (date, startTime, endTime) => {
+        const yyyyMmDd = new Date(date).toISOString().split('T')[0];
+        const start = new Date(`${yyyyMmDd}T${startTime}:00+07:00`);
+        const end = new Date(`${yyyyMmDd}T${endTime}:00+07:00`);
+        const now = new Date();
+
+        return now >= start && now <= end;
+    };
+
     return (
         <div className="container mx-auto px-4 py-8">
             <div className="max-w-3xl mx-auto">
@@ -207,25 +258,36 @@ const BookAppointment = () => {
                                 ) : (
                                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                         {filteredSlots.length > 0 ? (
-                                            filteredSlots.map((slot) => (
-                                                <button
-                                                    key={slot._id}
-                                                    type="button"
-                                                    onClick={() => handleSlotSelect(slot)}
-                                                    className={`p-4 text-center rounded-md border transition-all duration-200 ${
-                                                        selectedSlot?._id === slot._id
-                                                            ? 'bg-blue-500 text-white border-blue-500 transform scale-105'
-                                                            : 'bg-white text-gray-700 border-gray-300 hover:border-blue-500 hover:bg-blue-50'
-                                                    }`}
-                                                >
-                                                    <div className="font-medium">
-                                                        {formatTime(slot.startTime)}
-                                                    </div>
-                                                    <div className="text-sm">
-                                                        to {formatTime(slot.endTime)}
-                                                    </div>
-                                                </button>
-                                            ))
+                                            filteredSlots.map((slot) => {
+                                                const isPassed = isSlotPassed(slot);
+                                                return (
+                                                    <button
+                                                        key={slot._id}
+                                                        type="button"
+                                                        onClick={() => !isPassed && handleSlotSelect(slot)}
+                                                        disabled={isPassed}
+                                                        className={`p-4 text-center rounded-md border transition-all duration-200 ${
+                                                            isPassed
+                                                                ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                                                                : selectedSlot?._id === slot._id
+                                                                    ? 'bg-blue-500 text-white border-blue-500 transform scale-105'
+                                                                    : 'bg-white text-gray-700 border-gray-300 hover:border-blue-500 hover:bg-blue-50'
+                                                        }`}
+                                                    >
+                                                        <div className="font-medium">
+                                                            {formatTime(slot.startTime)}
+                                                        </div>
+                                                        <div className="text-sm">
+                                                            to {formatTime(slot.endTime)}
+                                                        </div>
+                                                        {isPassed && (
+                                                            <div className="text-xs mt-1 text-red-500">
+                                                                Time has passed
+                                                            </div>
+                                                        )}
+                                                    </button>
+                                                );
+                                            })
                                         ) : (
                                             <div className="col-span-full text-center py-8">
                                                 <p className="text-gray-500 mb-2">No slots available for this date</p>

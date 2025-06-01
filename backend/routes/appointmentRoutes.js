@@ -20,7 +20,8 @@ import {
     updateSlotAdmin,
     deleteSlotAdmin,
     getDoctorRecentAppointments,
-    getPatientRecentAppointments
+    getPatientRecentAppointments,
+    updateDoctorComment
 } from '../controllers/appointmentController.js';
 
 const appointmentRouter = express.Router();
@@ -62,5 +63,8 @@ appointmentRouter.get('/doctor-slots/:doctorId', adminAuth, getDoctorSlotsAdmin)
 appointmentRouter.post('/add-slot/:doctorId', adminAuth, addSlotAdmin);
 appointmentRouter.put('/admin/slot/:slotId', adminAuth, updateSlotAdmin);
 appointmentRouter.delete('/admin/slot/:slotId', adminAuth, deleteSlotAdmin);
+
+// Add this route with the other appointment routes
+appointmentRouter.put('/:id/comment', userAuth, updateDoctorComment);
 
 export default appointmentRouter; 

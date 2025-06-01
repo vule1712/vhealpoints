@@ -3,6 +3,7 @@ import { AppContext } from '../../context/AppContext';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { format, parseISO } from 'date-fns';
+import AppointmentDetailsModal from '../../components/doctor/AppointmentDetailsModal';
 
 const DoctorAppointmentHistory = () => {
     const { backendUrl } = useContext(AppContext);
@@ -10,8 +11,6 @@ const DoctorAppointmentHistory = () => {
     const [loading, setLoading] = useState(true);
     const [selectedAppointment, setSelectedAppointment] = useState(null);
     const [showModal, setShowModal] = useState(false);
-    const [cancelReason, setCancelReason] = useState('');
-    const [showCancelForm, setShowCancelForm] = useState(false);
     const [filter, setFilter] = useState('all'); // all, pending, confirmed, completed, canceled
     const [patientFilter, setPatientFilter] = useState('all');
     const [sortBy, setSortBy] = useState('date');
@@ -44,42 +43,8 @@ const DoctorAppointmentHistory = () => {
         setShowModal(true);
     };
 
-    const handleUpdateStatus = async (status) => {
-        try {
-            const response = await axios.put(
-                `${backendUrl}/api/appointments/${selectedAppointment._id}/status`,
-                { 
-                    status,
-                    cancelReason: status === 'Canceled' ? cancelReason : undefined
-                },
-                { withCredentials: true }
-            );
-
-            if (response.data.success) {
-                toast.success(response.data.message || 'Appointment status updated successfully');
-                fetchAppointments();
-                setShowModal(false);
-                setCancelReason('');
-                setShowCancelForm(false);
-            } else {
-                toast.error(response.data.message || 'Failed to update appointment status');
-            }
-        } catch (error) {
-            console.error('Error updating appointment status:', error);
-            toast.error(error.response?.data?.message || 'Failed to update appointment status');
-        }
-    };
-
-    const handleCancelClick = () => {
-        setShowCancelForm(true);
-    };
-
-    const handleCancelSubmit = () => {
-        if (!cancelReason.trim()) {
-            toast.error('Please provide a reason for cancellation');
-            return;
-        }
-        handleUpdateStatus('Canceled');
+    const handleAppointmentUpdate = () => {
+        fetchAppointments();
     };
 
     const formatDateTime = (dateString) => {
@@ -240,6 +205,9 @@ const DoctorAppointmentHistory = () => {
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Notes
                                 </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Doctor's Comment
+                                </th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
@@ -277,6 +245,11 @@ const DoctorAppointmentHistory = () => {
                                             {appointment.notes || '-'}
                                         </div>
                                     </td>
+                                    <td className="px-6 py-4">
+                                        <div className="text-sm text-gray-900 truncate max-w-xs">
+                                            {appointment.doctorComment || '-'}
+                                        </div>
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
@@ -284,143 +257,15 @@ const DoctorAppointmentHistory = () => {
                 </div>
             </div>
 
-            {/* Appointment Details Modal */}
-            {showModal && selectedAppointment && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]" style={{ marginTop: '-82px' }}>
-                    <div className="bg-white rounded-lg p-8 max-w-2xl w-full relative">
-                        <button
-                            onClick={() => {
-                                setShowModal(false);
-                                setShowCancelForm(false);
-                                setCancelReason('');
-                            }}
-                            className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
-                        >
-                            ✕
-                        </button>
-                        <h2 className="text-2xl font-bold mb-6">Appointment Details</h2>
-                        <div className="space-y-6">
-                            <div>
-                                <p className="text-gray-600 text-sm">Patient Name</p>
-                                <p className="font-semibold text-lg">{selectedAppointment.patientId?.name || 'Unknown Patient'}</p>
-                            </div>
-                            <div>
-                                <p className="text-gray-600 text-sm">Date & Time</p>
-                                <p className="font-semibold text-lg">
-                                    {formatDateTime(selectedAppointment.slotId?.date)}
-                                </p>
-                                <p className="text-gray-500">
-                                    {formatTime(selectedAppointment.slotId?.startTime)} - 
-                                    {formatTime(selectedAppointment.slotId?.endTime)}
-                                </p>
-                            </div>
-                            <div>
-                                <p className="text-gray-600 text-sm">Status</p>
-                                <p className={`font-semibold text-lg ${
-                                    selectedAppointment.status === 'Completed' ? 'text-blue-600' :
-                                    selectedAppointment.status === 'Confirmed' ? 'text-green-600' :
-                                    selectedAppointment.status === 'Pending' ? 'text-yellow-600' :
-                                    'text-red-600'
-                                }`}>
-                                    {selectedAppointment.status}
-                                </p>
-                            </div>
-                            {selectedAppointment.status === 'Canceled' && (
-                                <div>
-                                    <p className="text-gray-600 text-sm">Cancellation Reason</p>
-                                    <p className="font-semibold text-lg text-red-600">
-                                        {selectedAppointment.cancelReason || 'No reason provided'}
-                                    </p>
-                                </div>
-                            )}
-                            {selectedAppointment.notes && (
-                                <div>
-                                    <p className="text-gray-600 text-sm">Notes</p>
-                                    <p className="font-semibold text-lg">{selectedAppointment.notes}</p>
-                                </div>
-                            )}
-                        </div>
-
-                        {showCancelForm && (
-                            <div className="mt-4 p-4 border border-red-200 rounded-lg bg-red-50">
-                                <p className="text-red-600 font-medium mb-2">Please provide a reason for cancellation:</p>
-                                <textarea
-                                    value={cancelReason}
-                                    onChange={(e) => setCancelReason(e.target.value)}
-                                    className="w-full p-2 border border-red-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
-                                    rows="3"
-                                    placeholder="Enter reason for cancellation..."
-                                />
-                                <div className="mt-2 flex justify-end space-x-2">
-                                    <button
-                                        onClick={() => {
-                                            setShowCancelForm(false);
-                                            setCancelReason('');
-                                        }}
-                                        className="px-3 py-1 text-gray-600 hover:text-gray-800"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        onClick={handleCancelSubmit}
-                                        className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-                                    >
-                                        Submit
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="mt-8 flex justify-end space-x-4">
-                            {selectedAppointment.status === 'Pending' && (
-                                <>
-                                    <button
-                                        onClick={() => handleUpdateStatus('Confirmed')}
-                                        className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
-                                    >
-                                        Confirm
-                                    </button>
-                                    <button
-                                        onClick={handleCancelClick}
-                                        className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-                                    >
-                                        Cancel with Reason
-                                    </button>
-                                </>
-                            )}
-                            {selectedAppointment.status === 'Confirmed' && (
-                                <>
-                                    <button
-                                        onClick={() => handleUpdateStatus('Completed')}
-                                        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-                                    >
-                                        Mark as Completed
-                                    </button>
-                                    <button
-                                        onClick={handleCancelClick}
-                                        className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-                                    >
-                                        Cancel with Reason
-                                    </button>
-                                </>
-                            )}
-                            {selectedAppointment.status === 'Completed' && (
-                                <p className="text-green-600 font-medium">This appointment has been completed</p>
-                            )}
-                            <button
-                                onClick={() => {
-                                    setShowModal(false);
-                                    setShowCancelForm(false);
-                                    setCancelReason('');
-                                }}
-                                className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
-                            >
-                                Close
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <AppointmentDetailsModal
+                appointment={selectedAppointment}
+                showModal={showModal}
+                onClose={() => {
+                    setShowModal(false);
+                    setSelectedAppointment(null);
+                }}
+                onAppointmentUpdate={handleAppointmentUpdate}
+            />
         </div>
     );
 };

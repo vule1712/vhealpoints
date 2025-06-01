@@ -12,6 +12,8 @@ const AppointmentHistory = () => {
     const [selectedAppointment, setSelectedAppointment] = useState(null);
     const [showModal, setShowModal] = useState(false);
     const { backendUrl } = useContext(AppContext);
+    const [selectedDoctor, setSelectedDoctor] = useState('all');
+    const [sortOrder, setSortOrder] = useState('desc'); // 'asc' or 'desc'
 
     const formatTime = (timeString) => {
         try {
@@ -67,6 +69,20 @@ const AppointmentHistory = () => {
         fetchAppointments();
     };
 
+    // Extract unique doctors
+    const doctorOptions = appointments
+        ? Array.from(new Set(appointments.map(a => a.doctorId?.name)))
+        : [];
+
+    // Filter and sort appointments
+    const filteredAppointments = appointments
+        .filter(a => selectedDoctor === 'all' || a.doctorId?.name === selectedDoctor)
+        .sort((a, b) => {
+            const dateA = new Date(a.slotId?.date.split('/').reverse().join('-'));
+            const dateB = new Date(b.slotId?.date.split('/').reverse().join('-'));
+            return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+        });
+
     if (loading) {
         return (
             <div className="bg-white rounded-lg shadow p-6">
@@ -95,10 +111,35 @@ const AppointmentHistory = () => {
     return (
         <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-2xl font-semibold mb-6">Appointment History</h2>
-            
+            <div className="flex flex-wrap gap-4 mb-4 items-center">
+                <label className="flex items-center gap-2">
+                    <span className="font-medium">Doctor:</span>
+                    <select
+                        className="border border-gray-300 rounded px-2 py-1"
+                        value={selectedDoctor}
+                        onChange={e => setSelectedDoctor(e.target.value)}
+                    >
+                        <option value="all">All</option>
+                        {doctorOptions.map(name => (
+                            <option key={name} value={name}>Dr. {name}</option>
+                        ))}
+                    </select>
+                </label>
+                <label className="flex items-center gap-2">
+                    <span className="font-medium">Sort by date:</span>
+                    <select
+                        className="border border-gray-300 rounded px-2 py-1"
+                        value={sortOrder}
+                        onChange={e => setSortOrder(e.target.value)}
+                    >
+                        <option value="desc">Newest first</option>
+                        <option value="asc">Oldest first</option>
+                    </select>
+                </label>
+            </div>
             <div className="space-y-4">
-                {appointments && appointments.length > 0 ? (
-                    appointments.map((appointment) => (
+                {filteredAppointments && filteredAppointments.length > 0 ? (
+                    filteredAppointments.map((appointment) => (
                         <div 
                             key={appointment._id} 
                             className="border-b border-gray-200 pb-4 last:border-b-0 last:pb-0 cursor-pointer hover:bg-gray-50 p-4 rounded-lg transition-colors"

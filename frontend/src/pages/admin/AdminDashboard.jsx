@@ -6,6 +6,7 @@ import { format, isToday, parseISO, isValid } from 'date-fns';
 import AppointmentDetailsModal from '../../components/admin/AppointmentDetailsModal';
 import RecentAppointments from '../../components/admin/RecentAppointments';
 import TodaySchedule from '../../components/admin/TodaySchedule';
+import refreshIcon from '../../assets/refresh_icon.png';
 
 const AdminDashboard = () => {
     const { backendUrl, userData } = useContext(AppContext);
@@ -216,7 +217,16 @@ const AdminDashboard = () => {
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold text-gray-800">Welcome, {userData?.name}!</h1>
-                <p className="text-gray-600">{format(new Date(), 'EEEE, MMMM d, yyyy')}</p>
+                <div className="flex items-center space-x-4">
+                    <p className="text-gray-600">{format(new Date(), 'EEEE, MMMM d, yyyy')}</p>
+                    <button
+                        className="px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors flex items-center justify-center"
+                        onClick={fetchDashboardData}
+                        title="Reload dashboard"
+                    >
+                        <img src={refreshIcon} alt="Reload" className="w-5 h-5" />
+                    </button>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

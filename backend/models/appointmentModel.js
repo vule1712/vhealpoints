@@ -27,6 +27,10 @@ const appointmentSchema = new mongoose.Schema({
     },
     cancelReason: {
         type: String
+    },
+    doctorComment: {
+        type: String,
+        default: ''
     }
 }, {
     timestamps: true

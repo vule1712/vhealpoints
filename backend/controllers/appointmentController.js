@@ -115,6 +115,45 @@ const checkAllAppointments = async () => {
 // Set up periodic check every minute
 setInterval(checkAllAppointments, 60000);
 
+// Helper: convert 12-hour or 24-hour time string to minutes since midnight
+function timeStringToMinutes(time) {
+    if (!time) return 0;
+    if (time.includes('AM') || time.includes('PM')) {
+        const [t, mod] = time.split(' ');
+        let [h, m] = t.split(':');
+        h = parseInt(h, 10);
+        if (h === 12) h = 0;
+        if (mod === 'PM') h += 12;
+        return h * 60 + parseInt(m, 10);
+    } else {
+        const [h, m] = time.split(':');
+        return parseInt(h, 10) * 60 + parseInt(m, 10);
+    }
+}
+
+// Helper: check if a slot is ongoing or in the future (for slot creation)
+function isSlotInFutureOrOngoing(date, startTime, endTime) {
+    // date: Date object or string
+    // startTime, endTime: 'HH:mm' or 'hh:mm AM/PM'
+    const yyyyMmDd = new Date(date).toISOString().split('T')[0];
+    // Convert to 24-hour format if needed
+    function to24(time) {
+        if (time.includes('AM') || time.includes('PM')) {
+            const [t, mod] = time.split(' ');
+            let [h, m] = t.split(':');
+            h = parseInt(h, 10);
+            if (h === 12) h = 0;
+            if (mod === 'PM') h += 12;
+            return `${h.toString().padStart(2, '0')}:${m}`;
+        }
+        return time;
+    }
+    const start = new Date(`${yyyyMmDd}T${to24(startTime)}:00+07:00`);
+    const end = new Date(`${yyyyMmDd}T${to24(endTime)}:00+07:00`);
+    const now = new Date();
+    return now < start;
+}
+
 // Create a new appointment
 export const createAppointment = async (req, res) => {
     try {
@@ -158,9 +197,9 @@ export const getDoctorAppointments = async (req, res) => {
     try {
         const doctorId = req.user.userId;
         const appointments = await appointmentModel.find({ doctorId })
-            .populate('patientId', 'name email')
+            .populate('patientId', 'name email bloodType')
             .populate('slotId')
-            .select('status notes cancelReason slotId patientId')
+            .select('status notes cancelReason slotId patientId doctorComment')
             .sort({ createdAt: -1 });
 
         // Check and update status for each appointment
@@ -182,9 +221,10 @@ export const getPatientAppointments = async (req, res) => {
     try {
         const patientId = req.user.userId;
         const appointments = await appointmentModel.find({ patientId })
-            .populate('doctorId', 'name email specialization clinicName')
+            .populate('doctorId', 'name email specialization clinicName clinicAddress')
             .populate('slotId')
-            .select('status notes cancelReason slotId doctorId')
+            .populate('patientId', 'name email bloodType')
+            .select('status notes cancelReason slotId doctorId patientId doctorComment')
             .sort({ createdAt: -1 });
 
         // Check and update status for each appointment
@@ -205,9 +245,10 @@ export const getPatientAppointments = async (req, res) => {
 export const getAllAppointments = async (req, res) => {
     try {
         const appointments = await appointmentModel.find()
-            .populate('doctorId', 'name email specialization clinicName')
-            .populate('patientId', 'name email')
+            .populate('doctorId', 'name email specialization clinicName clinicAddress')
+            .populate('patientId', 'name email bloodType')
             .populate('slotId', 'date startTime endTime')
+            .select('status notes cancelReason slotId doctorId patientId doctorComment')
             .sort({ createdAt: -1 });
 
         // Check and update status for each appointment
@@ -232,7 +273,7 @@ export const getRecentAppointments = async (req, res) => {
     try {
         const appointments = await appointmentModel.find()
             .populate('doctorId', 'name email specialization clinicName')
-            .populate('patientId', 'name email')
+            .populate('patientId', 'name email bloodType')
             .populate('slotId', 'date startTime endTime')
             .sort({ createdAt: -1 })
             .limit(5);
@@ -341,11 +382,20 @@ export const getAvailableSlots = async (req, res) => {
             isBooked: false
         }).sort({ date: 1, startTime: 1 });
 
-        // Format the slots to ensure consistent date format
-        const formattedSlots = availableSlots.map(slot => ({
-            ...slot.toObject(),
-            date: slot.date // This will use the getter from the model
-        }));
+        // Format the slots and check if they're in the past
+        const formattedSlots = availableSlots.map(slot => {
+            const slotDate = new Date(slot.date);
+            const [hours, minutes] = convertTo24Hour(slot.startTime).split(':');
+            slotDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+            
+            const isPastSlot = slotDate <= new Date();
+
+            return {
+                ...slot.toObject(),
+                date: slot.date,
+                isPastSlot
+            };
+        });
 
         res.json({
             success: true,
@@ -380,51 +430,56 @@ export const getDoctorSlots = async (req, res) => {
     }
 };
 
-// Add slot
+// Add slot (doctor)
 export const addSlot = async (req, res) => {
     try {
         const doctorId = req.user.userId;
         const { date, startTime, endTime } = req.body;
 
-        // Validate date and times
         const slotDate = new Date(date);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const now = new Date();
+        const slotDateMidnight = new Date(slotDate.getFullYear(), slotDate.getMonth(), slotDate.getDate());
+        const nowMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-        if (slotDate < today) {
+        if (slotDateMidnight < nowMidnight) {
             return res.status(400).json({
                 success: false,
                 message: 'Cannot add slots for past dates'
             });
         }
 
+        // For today, check if slot is in the future (using isSlotInFutureOrOngoing)
+        if (slotDateMidnight.getTime() === nowMidnight.getTime()) {
+            if (!isSlotInFutureOrOngoing(slotDate, startTime, endTime)) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Cannot add slots for times that have already passed today'
+                });
+            }
+        }
+
+        // Check for overlapping slots (robust)
+        const existingSlots = await availableSlotModel.find({ doctorId, date });
+        const newStart = timeStringToMinutes(startTime);
+        const newEnd = timeStringToMinutes(endTime);
+        for (const slot of existingSlots) {
+            const existStart = timeStringToMinutes(slot.startTime);
+            const existEnd = timeStringToMinutes(slot.endTime);
+            if (newStart < existEnd && newEnd > existStart) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'This slot overlaps with an existing slot'
+                });
+            }
+        }
+
         // Format times to 12-hour format
         const startTime12 = formatTime(startTime);
         const endTime12 = formatTime(endTime);
-
         if (!startTime12 || !endTime12) {
             return res.status(400).json({
                 success: false,
                 message: 'Invalid time format'
-            });
-        }
-
-        // Check for overlapping slots
-        const overlappingSlot = await availableSlotModel.findOne({
-            doctorId,
-            date,
-            $or: [
-                {
-                    startTime: { $lt: endTime12 },
-                    endTime: { $gt: startTime12 }
-                }
-            ]
-        });
-
-        if (overlappingSlot) {
-            return res.status(400).json({
-                success: false,
-                message: 'This slot overlaps with an existing slot'
             });
         }
 
@@ -434,9 +489,7 @@ export const addSlot = async (req, res) => {
             startTime: startTime12,
             endTime: endTime12
         });
-
         await newSlot.save();
-
         res.json({
             success: true,
             message: 'Slot added successfully',
@@ -932,45 +985,50 @@ export const addSlotAdmin = async (req, res) => {
         const { doctorId } = req.params;
         const { date, startTime, endTime } = req.body;
 
-        // Validate date and times
         const slotDate = new Date(date);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const now = new Date();
+        const slotDateMidnight = new Date(slotDate.getFullYear(), slotDate.getMonth(), slotDate.getDate());
+        const nowMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-        if (slotDate < today) {
+        if (slotDateMidnight < nowMidnight) {
             return res.status(400).json({
                 success: false,
                 message: 'Cannot add slots for past dates'
             });
         }
 
+        // For today, check if slot is in the future (using isSlotInFutureOrOngoing)
+        if (slotDateMidnight.getTime() === nowMidnight.getTime()) {
+            if (!isSlotInFutureOrOngoing(slotDate, startTime, endTime)) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Cannot add slots for times that have already passed today'
+                });
+            }
+        }
+
+        // Check for overlapping slots (robust)
+        const existingSlots = await availableSlotModel.find({ doctorId, date });
+        const newStart = timeStringToMinutes(startTime);
+        const newEnd = timeStringToMinutes(endTime);
+        for (const slot of existingSlots) {
+            const existStart = timeStringToMinutes(slot.startTime);
+            const existEnd = timeStringToMinutes(slot.endTime);
+            if (newStart < existEnd && newEnd > existStart) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'This slot overlaps with an existing slot'
+                });
+            }
+        }
+
         // Format times to 12-hour format
         const startTime12 = formatTime(startTime);
         const endTime12 = formatTime(endTime);
-
         if (!startTime12 || !endTime12) {
             return res.status(400).json({
                 success: false,
                 message: 'Invalid time format'
-            });
-        }
-
-        // Check for overlapping slots
-        const overlappingSlot = await availableSlotModel.findOne({
-            doctorId,
-            date,
-            $or: [
-                {
-                    startTime: { $lt: endTime12 },
-                    endTime: { $gt: startTime12 }
-                }
-            ]
-        });
-
-        if (overlappingSlot) {
-            return res.status(400).json({
-                success: false,
-                message: 'This slot overlaps with an existing slot'
             });
         }
 
@@ -980,9 +1038,7 @@ export const addSlotAdmin = async (req, res) => {
             startTime: startTime12,
             endTime: endTime12
         });
-
         await newSlot.save();
-
         res.json({
             success: true,
             message: 'Slot added successfully',
@@ -1002,7 +1058,7 @@ export const getDoctorRecentAppointments = async (req, res) => {
     try {
         const doctorId = req.user.userId;
         const appointments = await appointmentModel.find({ doctorId })
-            .populate('patientId', 'name email')
+            .populate('patientId', 'name email bloodType')
             .populate('slotId', 'date startTime endTime')
             .sort({ createdAt: -1 })
             .limit(5);
@@ -1038,5 +1094,36 @@ export const getPatientRecentAppointments = async (req, res) => {
             success: false,
             message: error.message
         });
+    }
+};
+
+export const updateDoctorComment = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { doctorComment } = req.body;
+        const userId = req.user.userId;
+
+        const appointment = await appointmentModel.findById(id);
+        if (!appointment) {
+            return res.status(404).json({ success: false, message: 'Appointment not found' });
+        }
+
+        // Check if the user is the doctor of this appointment
+        if (appointment.doctorId.toString() !== userId) {
+            return res.status(403).json({ success: false, message: 'Only the doctor can add comments' });
+        }
+
+        // Check if the appointment is completed
+        if (appointment.status !== 'Completed') {
+            return res.status(400).json({ success: false, message: 'Can only add comments to completed appointments' });
+        }
+
+        appointment.doctorComment = doctorComment;
+        await appointment.save();
+
+        res.json({ success: true, appointment });
+    } catch (error) {
+        console.error('Error updating doctor comment:', error);
+        res.status(500).json({ success: false, message: 'Error updating doctor comment' });
     }
 }; 

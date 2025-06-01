@@ -7,6 +7,9 @@ import '../../styles/components.css';
 
 const DoctorList = () => {
     const [doctors, setDoctors] = useState([]);
+    const [filteredDoctors, setFilteredDoctors] = useState([]);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchFilter, setSearchFilter] = useState('all'); // 'all', 'name', or 'specialization'
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const { backendUrl } = useContext(AppContext);
@@ -20,9 +23,11 @@ const DoctorList = () => {
             });
             if (response.data.success) {
                 setDoctors(response.data.doctors || []);
+                setFilteredDoctors(response.data.doctors || []);
             } else {
                 setError(response.data.message || 'Failed to fetch doctors');
                 setDoctors([]);
+                setFilteredDoctors([]);
             }
             setError(null);
         } catch (error) {
@@ -31,6 +36,7 @@ const DoctorList = () => {
             setError(errorMessage);
             toast.error(errorMessage);
             setDoctors([]);
+            setFilteredDoctors([]);
         } finally {
             setLoading(false);
         }
@@ -39,6 +45,30 @@ const DoctorList = () => {
     useEffect(() => {
         fetchDoctors();
     }, [backendUrl]);
+
+    // Filter doctors based on search query and filter type
+    useEffect(() => {
+        if (searchQuery.trim() === '') {
+            setFilteredDoctors(doctors);
+        } else {
+            const query = searchQuery.toLowerCase();
+            const filtered = doctors.filter(doctor => {
+                switch (searchFilter) {
+                    case 'name':
+                        return doctor.name.toLowerCase().includes(query);
+                    case 'specialization':
+                        return doctor.specialization.toLowerCase().includes(query);
+                    case 'clinic':
+                        return (doctor.clinicName || '').toLowerCase().includes(query);
+                    default:
+                        return doctor.name.toLowerCase().includes(query) ||
+                               doctor.specialization.toLowerCase().includes(query) ||
+                               (doctor.clinicName || '').toLowerCase().includes(query);
+                }
+            });
+            setFilteredDoctors(filtered);
+        }
+    }, [searchQuery, searchFilter, doctors]);
 
     const handleDoctorClick = (doctorId) => {
         navigate(`/patient/doctor/${doctorId}`);
@@ -73,9 +103,40 @@ const DoctorList = () => {
         <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-2xl font-bold mb-6">Find Doctors</h2>
             
+            {/* Search Bar and Filter */}
+            <div className="mb-6">
+                <div className="flex items-center gap-4">
+                    <div className="relative flex-grow">
+                        <input
+                            type="text"
+                            placeholder="Search doctors..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                            <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </div>
+                    </div>
+                    <span className="text-gray-600 font-medium">by</span>
+                    <select
+                        value={searchFilter}
+                        onChange={(e) => setSearchFilter(e.target.value)}
+                        className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                    >
+                        <option value="all">All</option>
+                        <option value="name">Name</option>
+                        <option value="specialization">Specialization</option>
+                        <option value="clinic">Clinic</option>
+                    </select>
+                </div>
+            </div>
+            
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {doctors && doctors.length > 0 ? (
-                    doctors.map((doctor) => (
+                {filteredDoctors && filteredDoctors.length > 0 ? (
+                    filteredDoctors.map((doctor) => (
                         <div
                             key={doctor._id}
                             onClick={() => handleDoctorClick(doctor._id)}
@@ -108,7 +169,9 @@ const DoctorList = () => {
                         </div>
                     ))
                 ) : (
-                    <p className="text-gray-500 text-center col-span-full py-4">No doctors found</p>
+                    <p className="text-gray-500 text-center col-span-full py-4">
+                        {searchQuery ? 'No doctors found matching your search' : 'No doctors found'}
+                    </p>
                 )}
             </div>
         </div>

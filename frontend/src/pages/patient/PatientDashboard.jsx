@@ -6,6 +6,7 @@ import { format, isToday, parseISO, isValid } from 'date-fns';
 import AppointmentDetailsModal from '../../components/patient/AppointmentDetailsModal';
 import RecentAppointments from '../../components/patient/RecentAppointments';
 import TodaySchedule from '../../components/patient/TodaySchedule';
+import refreshIcon from '../../assets/refresh_icon.png';
 
 const PatientDashboard = () => {
     const { backendUrl, userData } = useContext(AppContext);
@@ -20,56 +21,56 @@ const PatientDashboard = () => {
     const [selectedAppointment, setSelectedAppointment] = useState(null);
     const [showModal, setShowModal] = useState(false);
 
-    useEffect(() => {
-        const fetchDashboardData = async () => {
-            try {
-                setLoading(true);
-                // Fetch appointments
-                const appointmentsResponse = await axios.get(`${backendUrl}/api/appointments/patient`, {
-                    withCredentials: true
-                });
+    const fetchDashboardData = async () => {
+        try {
+            setLoading(true);
+            // Fetch appointments
+            const appointmentsResponse = await axios.get(`${backendUrl}/api/appointments/patient`, {
+                withCredentials: true
+            });
 
-                if (appointmentsResponse.data.success) {
-                    const appointments = appointmentsResponse.data.appointments;
-                    
-                    // Calculate statistics
-                    const stats = {
-                        totalAppointments: appointments.length,
-                        todayAppointments: appointments.filter(apt => {
-                            if (!apt.slotId?.date) return false;
-                            const [day, month, year] = apt.slotId.date.split('/');
-                            const slotDate = new Date(year, month - 1, day);
-                            return isToday(slotDate);
-                        }).length,
-                        confirmedAppointments: appointments.filter(apt => 
-                            apt.status === 'Confirmed'
-                        ).length,
-                        completedAppointments: appointments.filter(apt => 
-                            apt.status === 'Completed'
-                        ).length
-                    };
+            if (appointmentsResponse.data.success) {
+                const appointments = appointmentsResponse.data.appointments;
+                
+                // Calculate statistics
+                const stats = {
+                    totalAppointments: appointments.length,
+                    todayAppointments: appointments.filter(apt => {
+                        if (!apt.slotId?.date) return false;
+                        const [day, month, year] = apt.slotId.date.split('/');
+                        const slotDate = new Date(year, month - 1, day);
+                        return isToday(slotDate);
+                    }).length,
+                    confirmedAppointments: appointments.filter(apt => 
+                        apt.status === 'Confirmed'
+                    ).length,
+                    completedAppointments: appointments.filter(apt => 
+                        apt.status === 'Completed'
+                    ).length
+                };
 
-                    // Get today's schedule
-                    const today = appointments
-                        .filter(apt => {
-                            if (!apt.slotId?.date) return false;
-                            const [day, month, year] = apt.slotId.date.split('/');
-                            const slotDate = new Date(year, month - 1, day);
-                            return isToday(slotDate);
-                        })
-                        .sort((a, b) => new Date(a.slotId.startTime) - new Date(b.slotId.startTime));
+                // Get today's schedule
+                const today = appointments
+                    .filter(apt => {
+                        if (!apt.slotId?.date) return false;
+                        const [day, month, year] = apt.slotId.date.split('/');
+                        const slotDate = new Date(year, month - 1, day);
+                        return isToday(slotDate);
+                    })
+                    .sort((a, b) => new Date(a.slotId.startTime) - new Date(b.slotId.startTime));
 
-                    setTodaySchedule(today);
-                    setStats(prev => ({ ...prev, ...stats }));
-                }
-            } catch (error) {
-                console.error('Error fetching dashboard data:', error);
-                toast.error(error.response?.data?.message || 'Failed to fetch dashboard data');
-            } finally {
-                setLoading(false);
+                setTodaySchedule(today);
+                setStats(prev => ({ ...prev, ...stats }));
             }
-        };
+        } catch (error) {
+            console.error('Error fetching dashboard data:', error);
+            toast.error(error.response?.data?.message || 'Failed to fetch dashboard data');
+        } finally {
+            setLoading(false);
+        }
+    };
 
+    useEffect(() => {
         fetchDashboardData();
     }, [backendUrl]);
 
@@ -145,7 +146,16 @@ const PatientDashboard = () => {
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold text-gray-800">Welcome, {userData?.name}!</h1>
-                <p className="text-gray-600">{format(new Date(), 'EEEE, MMMM d, yyyy')}</p>
+                <div className="flex items-center space-x-4">
+                    <p className="text-gray-600">{format(new Date(), 'EEEE, MMMM d, yyyy')}</p>
+                    <button
+                        className="px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors flex items-center justify-center"
+                        onClick={fetchDashboardData}
+                        title="Reload dashboard"
+                    >
+                        <img src={refreshIcon} alt="Reload" className="w-5 h-5" />
+                    </button>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
