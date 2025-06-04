@@ -6,78 +6,93 @@
 
 ## 🌐 Overview
 
-**vHealPoint** is a full-stack web application that allows users to find doctors, book appointments, and manage healthcare services online. The platform is designed to improve the accessibility and efficiency of private clinic services through digital solutions.
+**vHealPoint** is a full-stack web application that revolutionizes healthcare management by providing a digital platform for connecting patients with healthcare providers. Our solution streamlines the appointment booking process and enhances patient-doctor communication.
 
 ---
 
-## ✅ Features
+## ✨ Key Features
 
-### 🔐 Authentication
-- [x] User Registration
-- [x] Login / Logout
+### 🔐 Authentication & Security
+- [x] User Registration with Email Verification
+- [x] Secure Login / Logout System
 - [x] JWT Authentication
-- [x] Email Verification
-- [x] Forgot / Change Password
-- [x] Role-Based Access Control
-- [ ] Google OAuth 2.0 Login *(Coming Soon)*
+- [x] Email Verification System
+- [x] Password Recovery & Reset
+- [x] Role-Based Access Control (Admin, Doctor, Patient)
+- [ ] Google OAuth 2.0 Integration *(Coming Soon)*
 
 ### 👥 User Dashboards
 - [ ] **Admin Dashboard**  
-  - Manage users, appointments, and system analytics
+  - User Management & Analytics
+  - System Configuration
+  - Appointment Oversight
 - [ ] **Doctor Dashboard**  
-  - View/manage appointments, medical records, prescriptions, and invoices
-- [ ] **Customer Dashboard**  
-  - Book appointments, view history, manage personal info
+  - Appointment Management
+  - Patient Records
+  - Schedule Management
+- [ ] **Patient Dashboard**  
+  - Appointment Booking
+  - Medical History
+  - Profile Management
 
 ### 🗓️ Clinic Management
-- [x] Book Appointments
-- [ ] Create Invoices
-- [ ] View Medical & Payment History
+- [x] Real-time Appointment Booking
+- [ ] Medical Records Management
+- [ ] Schedule Management
+- [ ] Patient History Tracking
+- [ ] Real-time notification using Socket.io *(Coming Soon)*
 
 ---
 
-## 🛠️ Tech Stack
+## 🛠️ Technology Stack
 
 ### Frontend
-- React.js
-- CSS + Tailwind CSS
+- React.js (Latest Version)
+- Tailwind CSS + CSS
+- Responsive Design
+- Modern UI/UX
 
 ### Backend
-- Node.js
-- Express.js
-- MongoDB
-- JWT for Authentication
+- Node.js & Express.js
+- MongoDB Database
+- JWT Authentication
 - Nodemailer for Email Services
+- RESTful API Architecture
 
 ---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js (v18+)
-- MongoDB (local or Atlas)
-- npm or yarn
+- Node.js (v18 or higher)
+- MongoDB
+- npm or yarn package manager
+- Git
 
-### 1. Clone the Repo
+### Installation Steps
+
+1. **Clone the Repository**
 ```bash
-git clone https://github.com/your-username/vhealpoint.git
+git clone https://github.com/vule1712/vhealpoints.git
 cd vhealpoint
-Install Dependencies
 ```
 
-### 2. Install Dependencies
-``` bash
-# Backend
+2. **Install Dependencies**
+```bash
+# Backend Setup
 cd backend
 npm install
 
-# Frontend
+# Frontend Setup
 cd ../frontend
 npm install
 ```
 
-### 3. Set Up Environment Variables
-``` .env
+3. **Environment Configuration**
+Create `.env` files in both frontend and backend directories:
+
+Backend `.env`:
+```env
 PORT=5000
 MONGO_URI=mongodb+srv://your-uri
 JWT_SECRET=your_jwt_secret
@@ -85,16 +100,30 @@ EMAIL_USER=your_email@example.com
 EMAIL_PASS=your_email_password
 ```
 
-### 4. Run the App
-``` bash
-# Start Backend
+Frontend `.env`:
+```env
+VITE_API_URL=http://localhost:5000
+```
+
+4. **Start the Application**
+```bash
+# Start Backend Server
 cd backend
 npm run dev
 
-# Start Frontend
+# Start Frontend Development Server
 cd ../frontend
-npm start
+npm run dev
 ```
 
-## 📸 Screenshots:
-*(Coming soon)*
+## 📝 API Documentation
+*(Coming Soon)*
+
+## 🤝 Contributing
+We welcome contributions! Please read our contributing guidelines before submitting pull requests.
+
+## 📸 Screenshots
+*(Coming Soon)*
+
+## 📞 Support
+For support, email vhealpointsa@gmail.com or open an issue in the repository.
