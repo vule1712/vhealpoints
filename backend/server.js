@@ -10,6 +10,7 @@ import appointmentRouter from './routes/appointmentRoutes.js';
 import doctorRouter from './routes/doctorRoutes.js';
 import contactRouter from './routes/contactRoutes.js';
 import './middleware/appointmentStatusUpdater.js';
+import doctorRatingRoutes from './routes/doctorRatingRoutes.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -31,5 +32,6 @@ app.use('/api/admin', adminRouter);
 app.use('/api/appointments', appointmentRouter);
 app.use('/api/doctor', doctorRouter);
 app.use('/api/contact', contactRouter);
+app.use('/api/doctor-ratings', doctorRatingRoutes);
 
 app.listen(PORT, () => {console.log(`Server is running on port ${PORT}`);});

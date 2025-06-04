@@ -1,4 +1,5 @@
 import { useState, useEffect, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { AppContext } from '../../context/AppContext';
 import toast from 'react-hot-toast';
@@ -9,6 +10,7 @@ const PatientList = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const { backendUrl } = useContext(AppContext);
+    const navigate = useNavigate();
 
     // Fetch patient list from the backend
     const fetchPatients = async () => {
@@ -37,6 +39,10 @@ const PatientList = () => {
     useEffect(() => {
         fetchPatients();
     }, [backendUrl]);
+
+    const handlePatientClick = (patientId) => {
+        navigate(`/doctor/patient/${patientId}`);
+    };
 
     if (loading) {
         return (
@@ -76,7 +82,8 @@ const PatientList = () => {
                             {patients.map((patient, index) => (
                                 <tr 
                                     key={patient._id || index} 
-                                    className="admin-table-row"
+                                    className="admin-table-row cursor-pointer hover:bg-gray-50"
+                                    onClick={() => handlePatientClick(patient._id)}
                                 >
                                     <td className="admin-table-cell">{index + 1}</td>
                                     <td className="admin-table-cell admin-table-cell-bold">{patient.name || 'N/A'}</td>

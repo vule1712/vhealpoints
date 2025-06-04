@@ -1,6 +1,4 @@
-import User from '../models/userModel.js';
 import Appointment from '../models/appointmentModel.js';
-import AvailableSlot from '../models/availableSlotModel.js';
 
 export const getDashboardStats = async (req, res) => {
     try {

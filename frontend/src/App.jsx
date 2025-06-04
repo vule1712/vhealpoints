@@ -28,6 +28,8 @@ import PatientAppointments from './pages/patient/PatientAppointments'
 import AdminAppointments from './pages/admin/AdminAppointments'
 import DoctorManagement from './pages/admin/DoctorManagement'
 import AppointmentHistoryPage from './pages/patient/AppointmentHistory'
+import PatientProfile from './pages/doctor/PatientProfile'
+import DoctorRatingForm from './components/patient/DoctorRatingForm'
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
@@ -122,6 +124,7 @@ const App = () => {
           <Route index element={<Navigate to="/doctor/dashboard" replace />} />
           <Route path='dashboard' element={<DoctorDashboard />} />
           <Route path='patients' element={<PatientList />} />
+          <Route path='patient/:patientId' element={<PatientProfile />} />
           <Route path='appointments' element={<DoctorAppointments />} />
           <Route path='appointment-history' element={<DoctorAppointmentHistory />} />
           <Route path='slots' element={<ManageSlots />} />
@@ -136,6 +139,7 @@ const App = () => {
           <Route path='dashboard' element={<PatientDashboard />} />
           <Route path='doctors' element={<DoctorList />} />
           <Route path='doctor/:doctorId' element={<DoctorProfile />} />
+          <Route path='doctor/:doctorId/rate' element={<DoctorRatingForm />} />
           <Route path='book-appointment/:doctorId' element={<BookAppointment />} />
           <Route path='appointments' element={<PatientAppointments />} />
           <Route path='appointment-history' element={<AppointmentHistoryPage />} />

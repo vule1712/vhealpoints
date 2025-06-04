@@ -15,6 +15,7 @@ const Profile = () => {
         specialization: userData?.specialization || '',
         clinicName: userData?.clinicName || '',
         clinicAddress: userData?.clinicAddress || '',
+        aboutMe: userData?.aboutMe || '',
         bloodType: userData?.bloodType || ''
     });
 
@@ -45,11 +46,7 @@ const Profile = () => {
             );
             
             if (response.data.success) {
-                setUserData(prevData => ({
-                    ...prevData,
-                    ...formData
-                }));
-                
+                setUserData(response.data.userData);
                 toast.success('Profile updated successfully');
                 setIsEditing(false);
             } else {
@@ -121,6 +118,29 @@ const Profile = () => {
                         <div className="p-6">
                             {userData.role === 'Doctor' ? (
                                 <div className="space-y-6">
+                                    {/* About Me Section */}
+                                    <div className="mb-8">
+                                        <label className="block text-xl font-semibold text-gray-900 mb-4">
+                                            About Me
+                                        </label>
+                                        {isEditing ? (
+                                            <textarea
+                                                name="aboutMe"
+                                                value={formData.aboutMe}
+                                                onChange={handleInputChange}
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
+                                                placeholder="Tell us about yourself, your experience, and what makes you unique as a doctor..."
+                                                rows="6"
+                                            />
+                                        ) : (
+                                            <div className="px-6 py-4 bg-gray-50 rounded-lg">
+                                                <p className="text-gray-700 text-lg whitespace-pre-wrap leading-relaxed">
+                                                    {userData.aboutMe || 'No information provided yet.'}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div className="space-y-4">
                                             <div>
@@ -142,7 +162,6 @@ const Profile = () => {
                                                     </div>
                                                 )}
                                             </div>
-
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                                     Clinic Name
@@ -175,10 +194,10 @@ const Profile = () => {
                                                     onChange={handleInputChange}
                                                     className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                                     placeholder="Enter your clinic address"
-                                                    rows="4"
+                                                    rows="3"
                                                 />
                                             ) : (
-                                                <div className="px-4 py-2 bg-gray-50 rounded-md min-h-[100px]">
+                                                <div className="px-4 py-2 bg-gray-50 rounded-md">
                                                     {userData.clinicAddress || 'Not set'}
                                                 </div>
                                             )}
@@ -227,6 +246,7 @@ const Profile = () => {
                                                     specialization: userData.specialization || '',
                                                     clinicName: userData.clinicName || '',
                                                     clinicAddress: userData.clinicAddress || '',
+                                                    aboutMe: userData.aboutMe || '',
                                                     bloodType: userData.bloodType || ''
                                                 });
                                             }}
@@ -264,6 +284,7 @@ const Profile = () => {
                                             specialization: userData.specialization || '',
                                             clinicName: userData.clinicName || '',
                                             clinicAddress: userData.clinicAddress || '',
+                                            aboutMe: userData.aboutMe || '',
                                             bloodType: userData.bloodType || ''
                                         });
                                     }}

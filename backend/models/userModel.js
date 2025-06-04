@@ -39,33 +39,16 @@ const userSchema = new mongoose.Schema({
             return this.role === 'Doctor';
         }
     },
+    aboutMe: {
+        type: String,
+        default: ''
+    },
 
     // Patient specific fields
     bloodType: {
         type: String,
         enum: ['', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'],
         default: ''
-    },
-    medicalHistory: {
-        type: [{
-            condition: {
-                type: String,
-                required: true
-            },
-            diagnosisDate: {
-                type: Date,
-                required: true
-            },
-            status: {
-                type: String,
-                enum: ['Active', 'Resolved', 'Chronic'],
-                required: true
-            },
-            notes: String
-        }],
-        default: function() {
-            return this.role === 'Patient' ? [] : undefined;
-        }
     },
     verifyOtp: {
         type: String,

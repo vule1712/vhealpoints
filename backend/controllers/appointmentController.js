@@ -1,6 +1,5 @@
 import appointmentModel from '../models/appointmentModel.js';
 import availableSlotModel from '../models/availableSlotModel.js';
-import userModel from '../models/userModel.js';
 
 // Helper function to convert 12-hour time to 24-hour time for comparison
 const convertTo24Hour = (time12h) => {
