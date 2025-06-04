@@ -198,8 +198,9 @@ export const getDoctorAppointments = async (req, res) => {
         const doctorId = req.user.userId;
         const appointments = await appointmentModel.find({ doctorId })
             .populate('patientId', 'name email bloodType')
+            .populate('doctorId', 'name email specialization clinicName clinicAddress')
             .populate('slotId')
-            .select('status notes cancelReason slotId patientId doctorComment')
+            .select('status notes cancelReason slotId patientId doctorId doctorComment')
             .sort({ createdAt: -1 });
 
         // Check and update status for each appointment

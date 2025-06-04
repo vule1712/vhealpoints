@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
   },
   signatureLabel: {
     fontSize: 11,
-    marginBottom: 30
+    marginBottom: 80
   },
   signatureName: {
     fontSize: 12,
