@@ -110,7 +110,6 @@ const AppointmentDetailsModal = ({
             if (response.data.success) {
                 toast.success('Comment updated successfully');
                 setIsEditingComment(false);
-                appointment.doctorComment = doctorComment;
                 if (onAppointmentUpdate) {
                     onAppointmentUpdate();
                 }
@@ -124,8 +123,8 @@ const AppointmentDetailsModal = ({
         try {
             setIsCompleting(true);
             const response = await axios.put(
-                `${backendUrl}/api/appointments/${appointment._id}/complete`,
-                { doctorComment },
+                `${backendUrl}/api/appointments/${appointment._id}/status`,
+                { status: 'Completed', doctorComment },
                 { withCredentials: true }
             );
 

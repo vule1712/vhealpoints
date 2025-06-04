@@ -270,9 +270,75 @@ const getContactFormEmailTemplate = (name, email, message) => {
     `;
 };
 
+const getAccountDeletionEmailTemplate = (name, role) => {
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 20px;
+            }
+            .header {
+                background-color: #dc2626;
+                color: white;
+                padding: 20px;
+                text-align: center;
+                border-radius: 5px 5px 0 0;
+            }
+            .content {
+                background-color: #f9f9f9;
+                padding: 20px;
+                border-radius: 0 0 5px 5px;
+            }
+            .warning {
+                color: #dc2626;
+                font-size: 14px;
+                margin-top: 20px;
+                padding: 15px;
+                background-color: #fee2e2;
+                border-radius: 5px;
+            }
+            .footer {
+                text-align: center;
+                margin-top: 20px;
+                font-size: 12px;
+                color: #666;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <h1>Account Deletion Notice</h1>
+        </div>
+        <div class="content">
+            <p>Dear ${name},</p>
+            <p>This email is to inform you that your ${role} account on vHealPoints has been deleted by an administrator.</p>
+            <div class="warning">
+                <p><strong>Important:</strong> All your data associated with this account has been permanently removed from our system.</p>
+            </div>
+            <p>If you believe this action was taken in error, please contact our support team immediately.</p>
+            <p>If you wish to create a new account in the future, you may do so by registering again on our platform.</p>
+            <p>Best regards,<br>The vHealPoints Team</p>
+        </div>
+        <div class="footer">
+            <p>This email was sent to you because your vHealPoints account was deleted.</p>
+            <p>© 2025 vHealPoints. All rights reserved.</p>
+        </div>
+    </body>
+    </html>
+    `;
+};
+
 export {
     getWelcomeEmailTemplate,
     getVerificationEmailTemplate,
     getPasswordResetEmailTemplate,
-    getContactFormEmailTemplate
+    getContactFormEmailTemplate,
+    getAccountDeletionEmailTemplate
 }; 

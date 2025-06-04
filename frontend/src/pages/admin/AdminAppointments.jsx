@@ -99,6 +99,7 @@ const AdminAppointments = () => {
                             doctorId: appointment.doctorId,
                             patientId: appointment.patientId,
                             slotId: appointment.slotId,
+                            doctorComment: appointment.doctorComment,
                             _id: appointment._id
                         };
                     } catch (error) {

@@ -266,12 +266,14 @@ const AppointmentDetailsModal = ({
                                 </p>
                             </div>
                         )}
-                        <div>
-                            <p className="text-gray-600 text-sm">Doctor's Comment</p>
-                            <p className="font-semibold text-lg">
-                                {appointment.doctorComment || 'No comment provided'}
-                            </p>
-                        </div>
+                        {appointment.status === 'Completed' && (
+                            <div className="mt-6 p-4 border border-green-200 rounded-md bg-green-50">
+                                <h3 className="text-lg font-semibold text-green-800 mb-2">Doctor's Comment</h3>
+                                <p className="text-gray-700">
+                                    {appointment.doctorComment || 'No comment provided'}
+                                </p>
+                            </div>
+                        )}
                         {appointment.notes && (
                             <div>
                                 <p className="text-gray-600 text-sm">Notes</p>

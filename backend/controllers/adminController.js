@@ -1,5 +1,6 @@
 import User from '../models/userModel.js';
 import mongoose from 'mongoose';
+import { sendAccountDeletionEmail } from '../config/nodemailer.js';
 
 // Get all users
 export const getAllUsers = async (req, res) => {
@@ -120,7 +121,16 @@ export const deleteUser = async (req, res) => {
             }
         }
 
+        // Store user info before deletion for email
+        const userEmail = user.email;
+        const userName = user.name;
+        const userRole = user.role;
+
+        // Delete the user
         await User.findByIdAndDelete(userId);
+
+        // Send deletion notification email
+        await sendAccountDeletionEmail(userEmail, userName, userRole);
 
         res.status(200).json({
             success: true,

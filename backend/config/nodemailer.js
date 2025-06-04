@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import { getWelcomeEmailTemplate, getVerificationEmailTemplate, getPasswordResetEmailTemplate, getContactFormEmailTemplate } from '../utils/emailTemplates.js';
+import { getWelcomeEmailTemplate, getVerificationEmailTemplate, getPasswordResetEmailTemplate, getContactFormEmailTemplate, getAccountDeletionEmailTemplate } from '../utils/emailTemplates.js';
 
 const transporter = nodemailer.createTransport({
     host: 'smtp-relay.brevo.com',
@@ -82,4 +82,29 @@ const sendContactFormEmail = async (name, email, message) => {
     }
 };
 
-export { transporter, sendWelcomeEmail, sendVerificationEmail, sendPasswordResetEmail, sendContactFormEmail };
+// Send account deletion email
+const sendAccountDeletionEmail = async (email, name, role) => {
+    try {
+        const mailOptions = {
+            from: process.env.SENDER_EMAIL,
+            to: email,
+            subject: 'Account Deletion Notice - vHealPoints',
+            html: getAccountDeletionEmailTemplate(name, role)
+        };
+
+        await transporter.sendMail(mailOptions);
+        return true;
+    } catch (error) {
+        console.error('Error sending account deletion email:', error);
+        return false;
+    }
+};
+
+export { 
+    transporter, 
+    sendWelcomeEmail, 
+    sendVerificationEmail, 
+    sendPasswordResetEmail, 
+    sendContactFormEmail,
+    sendAccountDeletionEmail 
+};

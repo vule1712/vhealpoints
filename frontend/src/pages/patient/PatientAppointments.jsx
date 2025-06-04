@@ -98,6 +98,7 @@ const PatientAppointments = () => {
                             cancelReason: appointment.cancelReason,
                             doctorId: appointment.doctorId,
                             slotId: appointment.slotId,
+                            doctorComment: appointment.doctorComment,
                             _id: appointment._id
                         };
                     } catch (error) {
