@@ -58,6 +58,11 @@ const EditFeedbackModal = ({ show, onClose, feedback, onUpdate }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (rating === 0) {
+            toast.error('Please select a rating');
+            return;
+        }
+
         setLoading(true);
 
         try {
@@ -65,7 +70,7 @@ const EditFeedbackModal = ({ show, onClose, feedback, onUpdate }) => {
                 `${backendUrl}/api/doctor-ratings/${feedback.doctorId}`,
                 {
                     rating,
-                    feedback: comment
+                    feedback: comment.trim()
                 },
                 {
                     withCredentials: true
@@ -115,7 +120,7 @@ const EditFeedbackModal = ({ show, onClose, feedback, onUpdate }) => {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Feedback
+                                Feedback (Optional)
                             </label>
                             <textarea
                                 value={comment}
@@ -123,7 +128,6 @@ const EditFeedbackModal = ({ show, onClose, feedback, onUpdate }) => {
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 rows="4"
                                 placeholder="Share your experience with this doctor..."
-                                required
                             />
                         </div>
 

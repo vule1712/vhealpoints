@@ -8,17 +8,12 @@ export const canRateDoctor = async (req, res) => {
         const { doctorId } = req.params;
         const patientId = req.user.userId;
 
-        console.log('doctorId:', doctorId);
-        console.log('patientId:', patientId);
-
         // Check if patient has any completed appointments with the doctor
-        const hasCompletedAppointment = await Appointment.findOne({
+        const completedAppointments = await Appointment.find({
             doctorId,
             patientId,
             status: 'Completed'
         });
-
-        console.log('Appointment found:', hasCompletedAppointment);
 
         // Check if patient has already rated the doctor
         const existingRating = await DoctorRating.findOne({
@@ -28,8 +23,9 @@ export const canRateDoctor = async (req, res) => {
 
         res.json({
             success: true,
-            canRate: hasCompletedAppointment && !existingRating,
-            hasRated: !!existingRating
+            canRate: completedAppointments.length > 0 && !existingRating,
+            hasRated: !!existingRating,
+            completedAppointments: completedAppointments.length
         });
     } catch (error) {
         res.status(500).json({
@@ -47,13 +43,13 @@ export const submitRating = async (req, res) => {
         const patientId = req.user.userId;
 
         // Check if patient has any completed appointments
-        const hasCompletedAppointment = await Appointment.findOne({
+        const completedAppointments = await Appointment.find({
             doctorId,
             patientId,
             status: 'Completed'
         });
 
-        if (!hasCompletedAppointment) {
+        if (completedAppointments.length === 0) {
             return res.status(400).json({
                 success: false,
                 message: 'You must have at least one completed appointment to rate this doctor'
@@ -163,6 +159,7 @@ export const updateRating = async (req, res) => {
         // Update the rating
         existingRating.rating = rating;
         existingRating.feedback = feedback;
+        existingRating.createdAt = new Date();
         await existingRating.save();
 
         // Populate the patient information
@@ -183,6 +180,47 @@ export const updateRating = async (req, res) => {
         res.status(500).json({
             success: false,
             message: error.message || 'Error updating rating'
+        });
+    }
+};
+
+// Delete a rating
+export const deleteRating = async (req, res) => {
+    try {
+        const { doctorId, ratingId } = req.params;
+        const userId = req.user.userId;
+        const userRole = req.user.role;
+
+        // Find the rating
+        const rating = await DoctorRating.findById(ratingId);
+
+        if (!rating) {
+            return res.status(404).json({
+                success: false,
+                message: 'Rating not found'
+            });
+        }
+
+        // Check if user is either the patient who created the rating or an admin
+        if (userRole !== 'Admin' && rating.patientId.toString() !== userId) {
+            return res.status(403).json({
+                success: false,
+                message: 'You are not authorized to delete this rating'
+            });
+        }
+
+        // Delete the rating
+        await DoctorRating.findByIdAndDelete(ratingId);
+
+        res.json({
+            success: true,
+            message: 'Rating deleted successfully'
+        });
+    } catch (error) {
+        console.error('Error deleting rating:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Error deleting rating'
         });
     }
 }; 

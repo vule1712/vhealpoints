@@ -40,6 +40,7 @@
 - [x] Medical Records Management
 - [x] Schedule Management
 - [x] Patient History Tracking
+- [x] Doctor's Feedbacks
 - [ ] Real-time notification using Socket.io *(Coming Soon)*
 
 ---

@@ -4,10 +4,11 @@ import axios from 'axios';
 import { AppContext } from '../../context/AppContext';
 import { toast } from 'react-hot-toast';
 import { format } from 'date-fns';
-import { FaArrowLeft, FaCalendarPlus } from 'react-icons/fa';
+import { FaArrowLeft, FaCalendarPlus, FaStar, FaEdit, FaStarHalfAlt } from 'react-icons/fa';
 import AppointmentDetailsModal from '../../components/patient/AppointmentDetailsModal';
 import DoctorRatingModal from '../../components/patient/DoctorRatingModal';
 import EditFeedbackModal from '../../components/patient/EditFeedbackModal';
+import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
 import '../../styles/components.css';
 
 const DoctorProfile = () => {
@@ -24,6 +25,8 @@ const DoctorProfile = () => {
     const [ratings, setRatings] = useState([]);
     const [selectedFeedback, setSelectedFeedback] = useState(null);
     const [showEditModal, setShowEditModal] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [feedbackToDelete, setFeedbackToDelete] = useState(null);
 
     useEffect(() => {
         const fetchDoctorAndAppointments = async () => {
@@ -65,7 +68,12 @@ const DoctorProfile = () => {
     useEffect(() => {
         const fetchRatings = async () => {
             try {
-                console.log('Fetching ratings for doctor:', doctorId);
+                // First check if patient can rate
+                const canRateResponse = await axios.get(`${backendUrl}/api/doctor-ratings/can-rate/${doctorId}`, {
+                    withCredentials: true
+                });
+
+                // Then fetch the ratings
                 const response = await axios.get(`${backendUrl}/api/doctor-ratings/${doctorId}`, {
                     withCredentials: true,
                     headers: {
@@ -73,14 +81,10 @@ const DoctorProfile = () => {
                     }
                 });
                 
-                console.log('Ratings response:', response.data);
-                console.log('Current user:', userData);
-                
                 if (response.data.success) {
                     setRatings(response.data.ratings);
-                    if (response.data.hasRated) {
-                        toast.error('You have already rated this doctor');
-                    } else {
+                    // Only show toast if patient can rate
+                    if (canRateResponse.data.success && canRateResponse.data.canRate) {
                         toast.success('You can rate this doctor');
                     }
                 } else {
@@ -119,6 +123,47 @@ const DoctorProfile = () => {
                 rating._id === updatedFeedback._id ? updatedFeedback : rating
             )
         );
+    };
+
+    const handleDeleteFeedback = async () => {
+        try {
+            const response = await axios.delete(`${backendUrl}/api/doctor-ratings/${doctorId}/${feedbackToDelete}`, {
+                withCredentials: true
+            });
+
+            if (response.data.success) {
+                setRatings(prevRatings => prevRatings.filter(rating => rating._id !== feedbackToDelete));
+                toast.success('Feedback deleted successfully');
+            } else {
+                toast.error(response.data.message || 'Failed to delete feedback');
+            }
+        } catch (err) {
+            console.error('Error deleting feedback:', err);
+            toast.error(err.response?.data?.message || 'Error deleting feedback');
+        } finally {
+            setShowDeleteModal(false);
+            setFeedbackToDelete(null);
+        }
+    };
+
+    const refreshRatings = async () => {
+        try {
+            const response = await axios.get(`${backendUrl}/api/doctor-ratings/${doctorId}`, {
+                withCredentials: true,
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.data.success) {
+                setRatings(response.data.ratings);
+            } else {
+                toast.error(response.data.message || 'Failed to fetch ratings');
+            }
+        } catch (err) {
+            console.error('Error fetching ratings:', err);
+            toast.error(err.response?.data?.message || 'Failed to fetch ratings');
+        }
     };
 
     if (loading) {
@@ -162,7 +207,17 @@ const DoctorProfile = () => {
 
                     {/* Doctor's Details */}
                     <div className="flex-grow">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-2">{doctor?.name}</h2>
+                        <div className="flex items-center gap-3 mb-2">
+                            <h2 className="text-2xl font-bold text-gray-900">{doctor?.name}</h2>
+                            {ratings.length > 0 && (
+                                <div className="flex items-center gap-1 bg-yellow-100 px-2 py-1 rounded-full">
+                                    <FaStar className="text-yellow-500" />
+                                    <span className="text-sm font-medium text-yellow-800">
+                                        {ratings.reduce((acc, curr) => acc + curr.rating, 0) / ratings.length}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
                         <p className="text-gray-600 mb-4">{doctor?.email}</p>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -194,12 +249,6 @@ const DoctorProfile = () => {
                                 <FaCalendarPlus className="w-5 h-5" />
                                 <span className="font-medium">Book Appointment</span>
                             </button>
-                            <button
-                                onClick={() => setShowRatingModal(true)}
-                                className="flex items-center gap-2 px-6 py-3 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-all duration-200 shadow-sm hover:shadow-md"
-                            >
-                                <span className="font-medium">Give Doctor Feedback</span>
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -207,69 +256,98 @@ const DoctorProfile = () => {
 
             {/* Patient's Feedback */}
             <div className="admin-card">
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-semibold">Doctor's Feedback</h2>
-                    {console.log('User ID:', userData?._id)}
-                    {console.log('Ratings:', ratings)}
-                    {console.log('Has user rating:', ratings.some(rating => rating.patientId?._id === userData?._id))}
+                <div className="flex justify-between items-center mb-6">
+                    <div className="flex items-center gap-3">
+                        <h2 className="text-xl font-semibold">Doctor's Feedback</h2>
+                        {ratings.length > 0 && (
+                            <div className="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-full">
+                                <span className="font-medium text-blue-900">
+                                    {ratings.length} {ratings.length === 1 ? 'Feedback' : 'Feedbacks'}
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                    <button
+                        onClick={() => setShowRatingModal(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-all duration-200 shadow-sm hover:shadow-md"
+                    >
+                        <FaStar className="w-4 h-4" />
+                        <span className="font-medium">Give Feedback</span>
+                    </button>
                 </div>
                 {ratings.length > 0 ? (
                     <div className="space-y-6">
                         {ratings.map((rating) => (
-                            <div key={rating._id} className="border-b pb-6 last:border-b-0">
-                                <div className="flex items-center justify-between mb-2">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
+                            <div key={rating._id} className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-lg">
                                             {rating.patientId?.name?.charAt(0) || 'P'}
                                         </div>
-                                        <span className="font-medium text-gray-900">{rating.patientId?.name || 'Anonymous Patient'}</span>
+                                        <div>
+                                            <span className="font-medium text-gray-900 block">{rating.patientId?.name || 'Anonymous Patient'}</span>
+                                            <span className="text-sm text-gray-500">
+                                                {format(new Date(rating.createdAt), 'MMM dd, yyyy')}
+                                            </span>
+                                        </div>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-sm text-gray-500">
-                                            {format(new Date(rating.createdAt), 'MMM dd, yyyy')}
-                                        </span>
-                                        {rating.patientId?._id === userData?._id && (
+                                    {rating.patientId?._id === userData?._id && (
+                                        <div className="flex items-center gap-2">
                                             <button
                                                 onClick={() => {
                                                     setSelectedFeedback(rating);
                                                     setShowEditModal(true);
                                                 }}
-                                                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                                                className="p-2 text-blue-600 hover:text-blue-800 transition-colors"
+                                                title="Edit feedback"
                                             >
-                                                Edit
+                                                <FaEdit className="w-4 h-4" />
                                             </button>
-                                        )}
-                                    </div>
-                                </div>
-                                <div className="flex items-center mb-3">
-                                    <div className="flex items-center">
-                                        {[...Array(5)].map((_, i) => (
-                                            <span 
-                                                key={i} 
-                                                className={`text-xl ${
-                                                    i < Math.floor(rating.rating) 
-                                                        ? 'text-yellow-500' 
-                                                        : i < rating.rating 
-                                                            ? 'text-yellow-500 opacity-50' 
-                                                            : 'text-gray-300'
-                                                }`}
+                                            <button
+                                                onClick={() => {
+                                                    setFeedbackToDelete(rating._id);
+                                                    setShowDeleteModal(true);
+                                                }}
+                                                className="p-2 text-red-600 hover:text-red-800 transition-colors"
+                                                title="Delete feedback"
                                             >
-                                                ★
-                                            </span>
-                                        ))}
-                                    </div>
-                                    <span className="ml-2 text-sm text-gray-600">
-                                        {rating.rating.toFixed(1)}/5
-                                    </span>
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
-                                <p className="text-gray-700 whitespace-pre-wrap">{rating.feedback}</p>
+                                <div className="flex items-center gap-2 mb-3">
+                                    {[...Array(5)].map((_, index) => {
+                                        const ratingValue = index + 1;
+                                        const halfRating = rating.rating - index;
+                                        if (halfRating >= 1) {
+                                            return <FaStar key={index} className="text-yellow-400" />;
+                                        } else if (halfRating >= 0.5) {
+                                            return <FaStarHalfAlt key={index} className="text-yellow-400" />;
+                                        } else {
+                                            return <FaStar key={index} className="text-gray-300" />;
+                                        }
+                                    })}
+                                    <span className="text-sm font-medium text-gray-600">{rating.rating.toFixed(1)}</span>
+                                </div>
+                                <p className="text-gray-600 whitespace-pre-wrap">{rating.feedback}</p>
                             </div>
                         ))}
                     </div>
                 ) : (
-                    <div className="text-center py-8">
-                        <p className="text-gray-500">No feedback available yet</p>
+                    <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+                        <FaStar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                        <p className="text-gray-500 text-lg font-medium">No feedback available yet</p>
                         <p className="text-sm text-gray-400 mt-2">Be the first to rate this doctor</p>
+                        <button
+                            onClick={() => setShowRatingModal(true)}
+                            className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-all duration-200"
+                        >
+                            <FaStar className="w-4 h-4" />
+                            <span className="font-medium">Give Feedback</span>
+                        </button>
                     </div>
                 )}
             </div>
@@ -338,11 +416,16 @@ const DoctorProfile = () => {
                 />
             )}
 
-            <DoctorRatingModal
-                show={showRatingModal}
-                onClose={() => setShowRatingModal(false)}
-                doctorId={doctorId}
-            />
+            {showRatingModal && (
+                <DoctorRatingModal
+                    show={showRatingModal}
+                    onClose={() => {
+                        setShowRatingModal(false);
+                        refreshRatings(); // Refresh ratings after closing the modal
+                    }}
+                    doctorId={doctorId}
+                />
+            )}
 
             {/* Edit Feedback Modal */}
             {selectedFeedback && (
@@ -354,6 +437,20 @@ const DoctorProfile = () => {
                     }}
                     feedback={selectedFeedback}
                     onUpdate={handleFeedbackUpdate}
+                />
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteModal && (
+                <DeleteConfirmationModal
+                    showModal={showDeleteModal}
+                    onClose={() => {
+                        setShowDeleteModal(false);
+                        setFeedbackToDelete(null);
+                    }}
+                    onConfirm={handleDeleteFeedback}
+                    title="Delete Feedback"
+                    message="Are you sure you want to delete this feedback? This action cannot be undone."
                 />
             )}
         </div>

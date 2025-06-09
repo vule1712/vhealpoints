@@ -6,6 +6,7 @@ import { format, isToday, parseISO, isValid } from 'date-fns';
 import AppointmentDetailsModal from '../../components/admin/AppointmentDetailsModal';
 import RecentAppointments from '../../components/admin/RecentAppointments';
 import TodaySchedule from '../../components/admin/TodaySchedule';
+import DoctorRatingStats from '../../components/admin/DoctorRatingStats';
 import refreshIcon from '../../assets/refresh_icon.png';
 
 const AdminDashboard = () => {
@@ -121,14 +122,22 @@ const AdminDashboard = () => {
         fetchDashboardData();
     }, [backendUrl]);
 
+    const handleAppointmentClick = (appointment) => {
+        setSelectedAppointment(appointment);
+        setShowModal(true);
+    };
+
+    const handleAppointmentUpdate = () => {
+        fetchDashboardData();
+    };
+
     const formatTime = (timeString) => {
         try {
-            // If the time is already in 12-hour format, return it
+            // If time is already in 12-hour format, return it
             if (/^(0?[1-9]|1[0-2]):[0-5][0-9] (AM|PM)$/.test(timeString)) {
                 return timeString;
             }
-            
-            // If it's in HH:mm format, convert to 12-hour format
+            // If time is in HH:mm format, convert to 12-hour format
             if (/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(timeString)) {
                 const [hours, minutes] = timeString.split(':');
                 const hour = parseInt(hours, 10);
@@ -136,8 +145,9 @@ const AdminDashboard = () => {
                 const hour12 = hour % 12 || 12;
                 return `${hour12.toString().padStart(2, '0')}:${minutes} ${ampm}`;
             }
-            
-            return 'Invalid time';
+            // If time is a Date object or date string, extract and format the time
+            const date = new Date(timeString);
+            return format(date, 'hh:mm a');
         } catch (error) {
             console.error('Error formatting time:', error);
             return 'Invalid time';
@@ -195,16 +205,6 @@ const AdminDashboard = () => {
         }
     ];
 
-    const handleAppointmentClick = (appointment) => {
-        setSelectedAppointment(appointment);
-        setShowModal(true);
-    };
-
-    const handleAppointmentUpdate = () => {
-        // Refresh appointments data
-        fetchDashboardData();
-    };
-
     if (loading) {
         return (
             <div className="admin-loading-spinner">
@@ -260,15 +260,22 @@ const AdminDashboard = () => {
                 />
             </div>
 
-            <AppointmentDetailsModal
-                appointment={selectedAppointment}
-                showModal={showModal}
-                onClose={() => {
-                    setShowModal(false);
-                    setSelectedAppointment(null);
-                }}
-                onAppointmentUpdate={handleAppointmentUpdate}
-            />
+            {/* Doctor Rating Statistics */}
+            <div className="mt-6">
+                <DoctorRatingStats />
+            </div>
+
+            {showModal && selectedAppointment && (
+                <AppointmentDetailsModal
+                    appointment={selectedAppointment}
+                    showModal={showModal}
+                    onClose={() => {
+                        setShowModal(false);
+                        setSelectedAppointment(null);
+                    }}
+                    onAppointmentUpdate={handleAppointmentUpdate}
+                />
+            )}
         </div>
     );
 };

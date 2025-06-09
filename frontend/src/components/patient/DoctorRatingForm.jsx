@@ -12,21 +12,29 @@ const DoctorRatingForm = ({ doctorId, onClose }) => {
     const [hover, setHover] = useState(0);
     const [feedback, setFeedback] = useState('');
     const [submitting, setSubmitting] = useState(false);
+    const [canRate, setCanRate] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const checkCanRate = async () => {
             try {
+                setLoading(true);
                 const response = await axios.get(`${backendUrl}/api/doctor-ratings/can-rate/${doctorId}`, { withCredentials: true });
-                console.log('Can rate response:', response.data);
+                
                 if (response.data.canRate === false) {
-                    toast.error('You can only rate a doctor after completing an appointment.');
+                    if (response.data.completedAppointments === 0) {
+                        toast.error('You must have at least one completed appointment to rate this doctor.');
+                    } else {
+                        toast.error('You have already rated this doctor.');
+                    }
                     if (onClose) onClose();
-                } else if (response.data.canRate === null) {
-                    console.warn('canRate is null, allowing rating submission.');
                 }
+                setCanRate(response.data.canRate);
             } catch (error) {
                 toast.error(error.response?.data?.message || 'Failed to check rating eligibility.');
                 if (onClose) onClose();
+            } finally {
+                setLoading(false);
             }
         };
         checkCanRate();
@@ -36,10 +44,8 @@ const DoctorRatingForm = ({ doctorId, onClose }) => {
     const renderStars = () => {
         const stars = [];
         for (let i = 1; i <= 5; i++) {
-            // Each star has two clickable areas: left (half) and right (full)
             const value = i;
             const halfValue = i - 0.5;
-            // Determine what to show for each star
             let icon;
             let fillLevel = hover || rating;
             if (fillLevel >= value) {
@@ -85,16 +91,12 @@ const DoctorRatingForm = ({ doctorId, onClose }) => {
             toast.error('Please select a rating');
             return;
         }
-        if (!feedback.trim()) {
-            toast.error('Please provide feedback');
-            return;
-        }
 
         try {
             setSubmitting(true);
             const response = await axios.post(
                 `${backendUrl}/api/doctor-ratings/${doctorId}`,
-                { rating, feedback },
+                { rating, feedback: feedback.trim() },
                 { withCredentials: true }
             );
 
@@ -109,6 +111,23 @@ const DoctorRatingForm = ({ doctorId, onClose }) => {
             setSubmitting(false);
         }
     };
+
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            </div>
+        );
+    }
+
+    if (canRate === false) {
+        return (
+            <div className="text-center py-8">
+                <p className="text-gray-600">You cannot rate this doctor at this time.</p>
+                <p className="text-sm text-gray-500 mt-2">You need to have at least one completed appointment to provide feedback.</p>
+            </div>
+        );
+    }
 
     return (
         <div className="max-w-2xl mx-auto p-6">
@@ -128,7 +147,7 @@ const DoctorRatingForm = ({ doctorId, onClose }) => {
 
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Feedback
+                        Feedback (Optional)
                     </label>
                     <textarea
                         value={feedback}
@@ -136,14 +155,13 @@ const DoctorRatingForm = ({ doctorId, onClose }) => {
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         rows="4"
                         placeholder="Share your experience with this doctor..."
-                        required
                     />
                 </div>
 
                 <div className="flex justify-end space-x-4">
                     <button
                         type="button"
-                        onClick={onClose ? onClose : () => navigate(`/patient/doctor/${doctorId}`)}
+                        onClick={onClose}
                         className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
                     >
                         Cancel

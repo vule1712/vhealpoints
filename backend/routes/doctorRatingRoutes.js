@@ -16,4 +16,7 @@ router.put('/:doctorId', userAuth, doctorRatingController.updateRating);
 // Get doctor's ratings
 router.get('/:doctorId', userAuth, doctorRatingController.getDoctorRatings);
 
+// Delete a rating
+router.delete('/:doctorId/:ratingId', userAuth, doctorRatingController.deleteRating);
+
 export default router; 

@@ -333,180 +333,189 @@ const DoctorSlotsModal = ({ doctor, showModal, onClose, onSlotsUpdate }) => {
         }
     };
 
+    const handleFeedbackDeleted = (ratingId) => {
+        // Update the doctor's ratings in the parent component
+        if (onSlotsUpdate) {
+            onSlotsUpdate();
+        }
+    };
+
     if (!showModal || !doctor) return null;
 
     return (
-        <>
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]" style={{ marginTop: '0px' }}>
-                <div className="bg-white rounded-lg p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-2xl font-bold">Dr. {doctor.name}'s Slots</h2>
-                        <button onClick={onClose} className="text-gray-500 hover:text-gray-700">✕</button>
-                    </div>
-
-                    {/* Add New Slot Form */}
-                    <div className="mb-8 p-4 border rounded-lg bg-gray-50">
-                        <h3 className="text-lg font-semibold mb-4">Add New Slot</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                                <input
-                                    type="date"
-                                    value={newSlot.date}
-                                    onChange={(e) => setNewSlot(prev => ({ ...prev, date: e.target.value }))}
-                                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
-                                <input
-                                    type="time"
-                                    value={newSlot.startTime}
-                                    onChange={(e) => setNewSlot(prev => ({ ...prev, startTime: e.target.value }))}
-                                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">End Time</label>
-                                <input
-                                    type="time"
-                                    value={newSlot.endTime}
-                                    onChange={(e) => setNewSlot(prev => ({ ...prev, endTime: e.target.value }))}
-                                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                />
-                            </div>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden">
+                {/* Header */}
+                <div className="p-6 border-b border-gray-200">
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <h2 className="text-2xl font-bold text-gray-800">Doctor Details</h2>
+                            <p className="text-gray-600 mt-1">Dr. {doctor.name}</p>
                         </div>
-                        <button
-                            onClick={handleAddSlot}
-                            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-                        >
-                            Add Slot
-                        </button>
-                    </div>
-
-                    {/* Slots List */}
-                    {loading ? (
-                        <div className="animate-pulse space-y-4">
-                            {[1, 2, 3].map((i) => (
-                                <div key={i} className="border-b border-gray-200 pb-4">
-                                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                                </div>
-                            ))}
+                        <div className="flex items-center gap-4">
+                            <button
+                                onClick={onClose}
+                                className="text-gray-500 hover:text-gray-700"
+                            >
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
                         </div>
-                    ) : error ? (
-                        <div className="text-red-500 text-center py-4">{error}</div>
-                    ) : (
-                        <div className="space-y-4">
-                            {slots.length > 0 ? (
-                                slots.map((slot) => (
-                                    <div
-                                        key={slot._id}
-                                        className="border rounded-lg p-4 hover:shadow-md transition-shadow"
-                                    >
-                                        {isEditing && editingSlot?._id === slot._id ? (
-                                            <div className="space-y-4">
-                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                    <div>
-                                                        <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                                                        <input
-                                                            type="date"
-                                                            value={editingSlot.date}
-                                                            onChange={(e) => setEditingSlot(prev => ({ ...prev, date: e.target.value }))}
-                                                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
-                                                        <input
-                                                            type="time"
-                                                            value={editingSlot.startTime}
-                                                            onChange={(e) => setEditingSlot(prev => ({ ...prev, startTime: e.target.value }))}
-                                                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label className="block text-sm font-medium text-gray-700 mb-1">End Time</label>
-                                                        <input
-                                                            type="time"
-                                                            value={editingSlot.endTime}
-                                                            onChange={(e) => setEditingSlot(prev => ({ ...prev, endTime: e.target.value }))}
-                                                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                                        />
-                                                    </div>
+                    </div>
+                </div>
+
+                {/* Add New Slot Form */}
+                <div className="mb-8 p-4 border rounded-lg bg-gray-50">
+                    <h3 className="text-lg font-semibold mb-4">Add New Slot</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                            <input
+                                type="date"
+                                value={newSlot.date}
+                                onChange={(e) => setNewSlot(prev => ({ ...prev, date: e.target.value }))}
+                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
+                            <input
+                                type="time"
+                                value={newSlot.startTime}
+                                onChange={(e) => setNewSlot(prev => ({ ...prev, startTime: e.target.value }))}
+                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">End Time</label>
+                            <input
+                                type="time"
+                                value={newSlot.endTime}
+                                onChange={(e) => setNewSlot(prev => ({ ...prev, endTime: e.target.value }))}
+                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            />
+                        </div>
+                    </div>
+                    <button
+                        onClick={handleAddSlot}
+                        className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                    >
+                        Add Slot
+                    </button>
+                </div>
+
+                {/* Slots List */}
+                {loading ? (
+                    <div className="animate-pulse space-y-4">
+                        {[1, 2, 3].map((i) => (
+                            <div key={i} className="border-b border-gray-200 pb-4">
+                                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                            </div>
+                        ))}
+                    </div>
+                ) : error ? (
+                    <div className="text-red-500 text-center py-4">{error}</div>
+                ) : (
+                    <div className="space-y-4">
+                        {slots.length > 0 ? (
+                            slots.map((slot) => (
+                                <div
+                                    key={slot._id}
+                                    className="border rounded-lg p-4 hover:shadow-md transition-shadow"
+                                >
+                                    {isEditing && editingSlot?._id === slot._id ? (
+                                        <div className="space-y-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                                                    <input
+                                                        type="date"
+                                                        value={editingSlot.date}
+                                                        onChange={(e) => setEditingSlot(prev => ({ ...prev, date: e.target.value }))}
+                                                        className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                                    />
                                                 </div>
-                                                <div className="flex justify-end space-x-2">
-                                                    <button
-                                                        onClick={() => {
-                                                            setIsEditing(false);
-                                                            setEditingSlot(null);
-                                                        }}
-                                                        className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600"
-                                                    >
-                                                        Cancel
-                                                    </button>
-                                                    <button
-                                                        onClick={handleEditSubmit}
-                                                        className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
-                                                    >
-                                                        Save Changes
-                                                    </button>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
+                                                    <input
+                                                        type="time"
+                                                        value={editingSlot.startTime}
+                                                        onChange={(e) => setEditingSlot(prev => ({ ...prev, startTime: e.target.value }))}
+                                                        className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">End Time</label>
+                                                    <input
+                                                        type="time"
+                                                        value={editingSlot.endTime}
+                                                        onChange={(e) => setEditingSlot(prev => ({ ...prev, endTime: e.target.value }))}
+                                                        className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                                    />
                                                 </div>
                                             </div>
-                                        ) : (
-                                            <div className="flex justify-between items-start">
-                                                <div>
-                                                    <p className="font-medium text-gray-900">
-                                                        {formatDateTime(slot.date)}
-                                                    </p>
-                                                    <p className="text-sm text-gray-500">
-                                                        {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
-                                                    </p>
-                                                    {slot.isBooked && (
-                                                        <span className="inline-block mt-1 px-2 py-1 text-xs font-semibold text-white bg-green-500 rounded">
-                                                            Booked
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                {canModifySlot(slot) && (
-                                                    <div className="flex space-x-2">
-                                                        <button
-                                                            onClick={() => handleEditClick(slot)}
-                                                            className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
-                                                        >
-                                                            Edit
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleDeleteSlot(slot._id)}
-                                                            className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-                                                        >
-                                                            Delete
-                                                        </button>
-                                                    </div>
+                                            <div className="flex justify-end space-x-2">
+                                                <button
+                                                    onClick={() => {
+                                                        setIsEditing(false);
+                                                        setEditingSlot(null);
+                                                    }}
+                                                    className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600"
+                                                >
+                                                    Cancel
+                                                </button>
+                                                <button
+                                                    onClick={handleEditSubmit}
+                                                    className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                                                >
+                                                    Save Changes
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <p className="font-medium text-gray-900">
+                                                    {formatDateTime(slot.date)}
+                                                </p>
+                                                <p className="text-sm text-gray-500">
+                                                    {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
+                                                </p>
+                                                {slot.isBooked && (
+                                                    <span className="inline-block mt-1 px-2 py-1 text-xs font-semibold text-white bg-green-500 rounded">
+                                                        Booked
+                                                    </span>
                                                 )}
                                             </div>
-                                        )}
-                                    </div>
-                                ))
-                            ) : (
-                                <p className="text-gray-500 text-center py-4">No slots found</p>
-                            )}
-                        </div>
-                    )}
-                </div>
+                                            {canModifySlot(slot) && (
+                                                <div className="flex space-x-2">
+                                                    <button
+                                                        onClick={() => handleEditClick(slot)}
+                                                        className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                                                    >
+                                                        Edit
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteSlot(slot._id)}
+                                                        className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            ))
+                        ) : (
+                            <p className="text-gray-500 text-center py-4">No slots found</p>
+                        )}
+                    </div>
+                )}
             </div>
-
-            <DeleteConfirmationModal
-                showModal={showDeleteModal}
-                onClose={() => {
-                    setShowDeleteModal(false);
-                    setSlotToDelete(null);
-                }}
-                onConfirm={confirmDeleteSlot}
-                title="Delete Time Slot"
-                message="Are you sure you want to delete this time slot? This action cannot be undone."
-            />
-        </>
+        </div>
     );
 };
 
