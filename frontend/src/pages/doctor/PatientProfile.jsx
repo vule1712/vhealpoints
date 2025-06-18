@@ -130,6 +130,10 @@ const PatientProfile = () => {
                         <p className="font-medium">{patient?.email || 'N/A'}</p>
                     </div>
                     <div>
+                        <p className="text-gray-600">Phone Number</p>
+                        <p className="font-medium">{patient?.phone || 'Not Set'}</p>
+                    </div>
+                    <div>
                         <p className="text-gray-600">Blood Type</p>
                         <p className="font-medium">
                             <span className={`px-2 py-1 rounded-full text-sm ${

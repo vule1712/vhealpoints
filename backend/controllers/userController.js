@@ -122,7 +122,7 @@ export const getAllDoctors = async (req, res) => {
 export const updateProfile = async(req, res) => {
     try {
         const { userId } = req.user;
-        const { name, specialization, clinicName, clinicAddress, bloodType, targetUserId, aboutMe } = req.body;
+        const { name, specialization, clinicName, clinicAddress, bloodType, targetUserId, aboutMe, phone } = req.body;
 
         // If targetUserId is provided, this is an admin update
         const userToUpdate = targetUserId ? await userModel.findById(targetUserId) : await userModel.findById(userId);
@@ -134,6 +134,11 @@ export const updateProfile = async(req, res) => {
         // Update name if provided
         if (name) {
             userToUpdate.name = name;
+        }
+
+        // Update phone number if provided
+        if (phone !== undefined) {
+            userToUpdate.phone = phone;
         }
 
         // Update fields based on user role

@@ -187,6 +187,21 @@ const UserProfilePage = () => {
                                         <label className="block text-sm font-medium text-gray-600">Email</label>
                                         <div className="mt-1 text-gray-900">{user.email}</div>
                                     </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-600">Phone Number</label>
+                                        {isEditing ? (
+                                            <input
+                                                type="tel"
+                                                name="phone"
+                                                value={editedUser?.phone || ''}
+                                                onChange={handleInputChange}
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                                placeholder="Enter phone number"
+                                            />
+                                        ) : (
+                                            <div className="mt-1 text-gray-900">{user.phone || 'Not set'}</div>
+                                        )}
+                                    </div>
                                 </div>
                                 <div className="space-y-4">
                                     <div>
@@ -228,10 +243,15 @@ const UserProfilePage = () => {
 
                         {/* Role-specific Information */}
                         {editedUser?.role === 'Doctor' && (
-                            <div className="mb-8">
-                                <h2 className="text-lg font-semibold text-gray-700 mb-4">Doctor Information</h2>
+                            <div className="mb-8 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 shadow-sm">
+                                <h2 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                                    <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg>
+                                    Doctor Information
+                                </h2>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div>
+                                    <div className="bg-white rounded-lg p-4 shadow-sm">
                                         <label className="block text-sm font-medium text-gray-600">Specialization</label>
                                         {isEditing ? (
                                             <input
@@ -246,7 +266,7 @@ const UserProfilePage = () => {
                                             <div className="mt-1 text-gray-900">{user.specialization || 'Not set'}</div>
                                         )}
                                     </div>
-                                    <div>
+                                    <div className="bg-white rounded-lg p-4 shadow-sm">
                                         <label className="block text-sm font-medium text-gray-600">Clinic Name</label>
                                         {isEditing ? (
                                             <input
@@ -261,7 +281,7 @@ const UserProfilePage = () => {
                                             <div className="mt-1 text-gray-900">{user.clinicName || 'Not set'}</div>
                                         )}
                                     </div>
-                                    <div className="md:col-span-2">
+                                    <div className="md:col-span-2 bg-white rounded-lg p-4 shadow-sm">
                                         <label className="block text-sm font-medium text-gray-600">Clinic Address</label>
                                         {isEditing ? (
                                             <textarea
@@ -276,16 +296,16 @@ const UserProfilePage = () => {
                                             <div className="mt-1 text-gray-900">{user.clinicAddress || 'Not set'}</div>
                                         )}
                                     </div>
-                                    <div className="md:col-span-2">
-                                        <label className="block text-sm font-medium text-gray-600">About Me</label>
+                                    <div className="md:col-span-2 bg-white rounded-lg p-4 shadow-sm">
+                                        <label className="block text-sm font-medium text-gray-600">About</label>
                                         {isEditing ? (
                                             <textarea
                                                 name="aboutMe"
                                                 value={editedUser.aboutMe || ''}
                                                 onChange={handleInputChange}
-                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                                placeholder="Tell us about yourself"
                                                 rows="4"
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                                placeholder="Enter about information"
                                             />
                                         ) : (
                                             <div className="mt-1 text-gray-900 whitespace-pre-wrap">{user.aboutMe || 'Not set'}</div>
@@ -296,10 +316,15 @@ const UserProfilePage = () => {
                         )}
 
                         {editedUser?.role === 'Patient' && (
-                            <div className="mb-8">
-                                <h2 className="text-lg font-semibold text-gray-700 mb-4">Patient Information</h2>
+                            <div className="mb-8 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 shadow-sm">
+                                <h2 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                                    <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                    </svg>
+                                    Patient Information
+                                </h2>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div>
+                                    <div className="bg-white rounded-lg p-4 shadow-sm">
                                         <label className="block text-sm font-medium text-gray-600">Blood Type</label>
                                         {isEditing ? (
                                             <select
@@ -314,7 +339,13 @@ const UserProfilePage = () => {
                                                 ))}
                                             </select>
                                         ) : (
-                                            <div className="mt-1 text-gray-900">{user.bloodType || 'Not set'}</div>
+                                            <div className="mt-1">
+                                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                                                    user.bloodType ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
+                                                }`}>
+                                                    {user.bloodType || 'Not set'}
+                                                </span>
+                                            </div>
                                         )}
                                     </div>
                                 </div>
@@ -322,40 +353,42 @@ const UserProfilePage = () => {
                         )}
 
                         {/* Action Buttons */}
-                        <div className="flex justify-end space-x-4 pt-6 border-t">
+                        <div className="flex justify-end gap-4 mt-8">
                             {isEditing ? (
                                 <>
-                                    <button 
+                                    <button
                                         onClick={() => {
                                             setIsEditing(false);
                                             setEditedUser(user);
                                         }}
-                                        className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                                     >
                                         Cancel
                                     </button>
-                                    <button 
+                                    <button
                                         onClick={handleSave}
                                         disabled={isSaving}
-                                        className="px-4 py-2 border border-transparent rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                                        className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         {isSaving ? 'Saving...' : 'Save Changes'}
                                     </button>
                                 </>
                             ) : (
-                                <button 
-                                    onClick={() => setIsEditing(true)}
-                                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                >
-                                    Edit Profile
-                                </button>
+                                <>
+                                    <button
+                                        onClick={() => setIsEditing(true)}
+                                        className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                    >
+                                        Edit Profile
+                                    </button>
+                                    <button
+                                        onClick={handleDelete}
+                                        className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                    >
+                                        Delete User
+                                    </button>
+                                </>
                             )}
-                            <button 
-                                onClick={handleDelete}
-                                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                            >
-                                Delete Account
-                            </button>
                         </div>
                     </div>
                 </div>

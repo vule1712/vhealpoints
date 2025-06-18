@@ -229,6 +229,10 @@ const DoctorProfile = () => {
                                 <p className="text-gray-600">Clinic Name</p>
                                 <p className="font-medium">{doctor?.clinicName || 'Not specified'}</p>
                             </div>
+                            <div>
+                                <p className="text-gray-600">Phone Number</p>
+                                <p className="font-medium">{doctor?.phone || 'Not specified'}</p>
+                            </div>
                             <div className="md:col-span-2">
                                 <p className="text-gray-600">Clinic Address</p>
                                 <p className="font-medium">{doctor?.clinicAddress || 'Not specified'}</p>
