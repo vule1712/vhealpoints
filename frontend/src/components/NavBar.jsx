@@ -5,6 +5,7 @@ import { AppContext } from '../context/AppContext'
 import axios from 'axios'
 import { toast } from 'react-hot-toast'
 import '../styles/components.css'
+import NotificationBell from './NotificationBell'
 
 const NavBar = () => {
 
@@ -45,19 +46,22 @@ const NavBar = () => {
         <div className='navbar'>
                 <img onClick={() => navigate('/')} src={assets.vHealPoints3} alt="" className='navbar-logo' />
             {userData ?
-            <div className='user-avatar'>
-                {userData.name[0].toUpperCase()}
-                <div className='user-menu'>
-                    <ul className='menu-list'>
-                        {!userData.isAccountVerified && 
-                        <li onClick={sendVerificationOtp}
-                        className='menu-item'>
-                            Verify Email
-                        </li>
-                        }
-                        <li onClick={() => navigate('/profile')} className='menu-item'>Profile</li>
-                        <li onClick={logout} className='menu-item logout'>Logout</li>
-                    </ul>
+            <div className='flex items-center gap-4'>
+                <NotificationBell />
+                <div className='user-avatar'>
+                    {userData.name[0].toUpperCase()}
+                    <div className='user-menu'>
+                        <ul className='menu-list'>
+                            {!userData.isAccountVerified && 
+                            <li onClick={sendVerificationOtp}
+                            className='menu-item'>
+                                Verify Email
+                            </li>
+                            }
+                            <li onClick={() => navigate('/profile')} className='menu-item'>Profile</li>
+                            <li onClick={logout} className='menu-item logout'>Logout</li>
+                        </ul>
+                    </div>
                 </div>
             </div>
             : 

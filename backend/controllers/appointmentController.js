@@ -1,5 +1,9 @@
 import appointmentModel from '../models/appointmentModel.js';
 import availableSlotModel from '../models/availableSlotModel.js';
+import userModel from '../models/userModel.js';
+import notificationModel from '../models/notificationModel.js';
+import { getIO, getUserSocketMap } from '../socket.js';
+import { sendAppointmentReminderEmail } from '../config/nodemailer.js';
 
 // Helper function to convert 12-hour time to 24-hour time for comparison
 const convertTo24Hour = (time12h) => {
@@ -81,13 +85,31 @@ const checkAndUpdateAppointmentStatus = async (appointment) => {
                 });
                 
                 // Use findByIdAndUpdate to ensure atomic operation
-                await appointmentModel.findByIdAndUpdate(
+                const updatedAppointment = await appointmentModel.findByIdAndUpdate(
                     appointment._id,
                     { status: 'Completed' },
                     { new: true }
-                );
+                ).populate('doctorId');
                 
                 appointment.status = 'Completed';
+
+                if (updatedAppointment) {
+                    const io = getIO();
+                    const userSocketMap = getUserSocketMap();
+                    // Notify patient
+                    const messageToPatient = `Your appointment with Dr. ${updatedAppointment.doctorId.name} has been completed.`;
+                    const notificationToPatient = new notificationModel({
+                        userId: updatedAppointment.patientId,
+                        message: messageToPatient,
+                        type: 'appointment',
+                        targetId: updatedAppointment._id,
+                    });
+                    await notificationToPatient.save();
+                    const patientSocketId = userSocketMap[updatedAppointment.patientId.toString()];
+                    if (patientSocketId) {
+                        io.to(patientSocketId).emit('notification', notificationToPatient);
+                    }
+                }
             }
         }
         return appointment;
@@ -158,6 +180,7 @@ export const createAppointment = async (req, res) => {
     try {
         const { doctorId, slotId, notes } = req.body;
         const patientId = req.user.userId;
+        const { io, userSocketMap } = req;
 
         // Check if slot exists and is available
         const slot = await availableSlotModel.findById(slotId);
@@ -180,6 +203,40 @@ export const createAppointment = async (req, res) => {
         slot.isBooked = true;
         await slot.save();
         await appointment.save();
+
+        const patient = await userModel.findById(patientId);
+        const doctor = await userModel.findById(doctorId);
+
+        // Notify doctor and admins
+        const messageToDoctor = `New appointment booked by ${patient.name}.`;
+        const notificationToDoctor = new notificationModel({
+            userId: doctorId,
+            message: messageToDoctor,
+            type: 'appointment',
+            targetId: appointment._id,
+        });
+        await notificationToDoctor.save();
+
+        const doctorSocketId = userSocketMap[doctorId];
+        if (doctorSocketId) {
+            io.to(doctorSocketId).emit('notification', notificationToDoctor);
+        }
+
+        const admins = await userModel.find({ role: 'Admin' });
+        for (const admin of admins) {
+            const messageToAdmin = `New appointment booked for Dr. ${doctor.name} by ${patient.name}.`;
+            const notificationToAdmin = new notificationModel({
+                userId: admin._id,
+                message: messageToAdmin,
+                type: 'appointment',
+                targetId: appointment._id,
+            });
+            await notificationToAdmin.save();
+            const adminSocketId = userSocketMap[admin._id.toString()];
+            if (adminSocketId) {
+                io.to(adminSocketId).emit('notification', notificationToAdmin);
+            }
+        }
 
         res.json({
             success: true,
@@ -299,32 +356,21 @@ export const getRecentAppointments = async (req, res) => {
 export const updateAppointmentStatus = async (req, res) => {
     try {
         const { appointmentId } = req.params;
-        const { status, cancelReason } = req.body;
+        const { status } = req.body;
+        const { io, userSocketMap } = req;
 
-        const appointment = await appointmentModel.findById(appointmentId);
-        
+        const appointment = await appointmentModel.findById(appointmentId).populate('patientId doctorId');
         if (!appointment) {
             return res.status(404).json({
                 success: false,
                 message: 'Appointment not found'
             });
         }
-
-        // If the appointment is being canceled, make the slot available again
-        if (status === 'Canceled') {
-            await availableSlotModel.findByIdAndUpdate(
-                appointment.slotId,
-                { isBooked: false }
-            );
-        }
-
-        // Update the appointment status
+        
         appointment.status = status;
-        if (status === 'Canceled') {
-            appointment.cancelReason = cancelReason;
-        }
+        
         await appointment.save();
-
+        
         res.status(200).json({
             success: true,
             data: appointment
@@ -341,31 +387,76 @@ export const updateAppointmentStatus = async (req, res) => {
 export const deleteAppointment = async (req, res) => {
     try {
         const { appointmentId } = req.params;
+        const patientId = req.user.userId;
+        const { io, userSocketMap } = req;
 
-        const appointment = await appointmentModel.findByIdAndDelete(appointmentId);
-
+        const appointment = await appointmentModel.findById(appointmentId).populate('patientId doctorId');
         if (!appointment) {
-            return res.status(404).json({
-                success: false,
-                message: 'Appointment not found'
-            });
+            return res.status(404).json({ success: false, message: 'Appointment not found' });
         }
 
-        // Update the slot availability
-        await availableSlotModel.findByIdAndUpdate(
-            appointment.slotId,
-            { isBooked: false }
-        );
+        if (appointment.patientId._id.toString() !== patientId && appointment.doctorId._id.toString() !== patientId) {
+            return res.status(403).json({ success: false, message: 'You are not authorized to delete this appointment' });
+        }
 
-        res.status(200).json({
-            success: true,
-            message: 'Appointment deleted successfully'
+        const deletedByDoctor = appointment.doctorId._id.toString() === patientId;
+
+        await appointmentModel.findByIdAndDelete(appointmentId);
+
+        // Notify doctor and admins
+        const messageToDoctor = `Appointment with ${appointment.patientId.name} has been canceled.`;
+        const notificationToDoctor = new notificationModel({
+            userId: appointment.doctorId._id,
+            message: messageToDoctor,
+            type: 'appointment',
+            targetId: appointment._id,
         });
+        await notificationToDoctor.save();
+
+        const doctorSocketId = userSocketMap[appointment.doctorId._id.toString()];
+        if (doctorSocketId) {
+            io.to(doctorSocketId).emit('notification', notificationToDoctor);
+        }
+
+        // Notify patient if deleted by doctor
+        if (deletedByDoctor) {
+            const messageToPatient = `Your appointment with Dr. ${appointment.doctorId.name} has been canceled by the doctor.`;
+            const notificationToPatient = new notificationModel({
+                userId: appointment.patientId._id,
+                message: messageToPatient,
+                type: 'appointment',
+                targetId: appointment._id,
+            });
+            await notificationToPatient.save();
+            const patientSocketId = userSocketMap[appointment.patientId._id.toString()];
+            if (patientSocketId) {
+                io.to(patientSocketId).emit('notification', notificationToPatient);
+            }
+        }
+
+        // Notify admins
+        const admins = await userModel.find({ role: 'Admin' });
+        for (const admin of admins) {
+            const messageToAdmin = deletedByDoctor
+                ? `Appointment for Dr. ${appointment.doctorId.name} with ${appointment.patientId.name} has been canceled by the doctor.`
+                : `Appointment for Dr. ${appointment.doctorId.name} with ${appointment.patientId.name} has been canceled by the patient.`;
+            const notificationToAdmin = new notificationModel({
+                userId: admin._id,
+                message: messageToAdmin,
+                type: 'appointment',
+                targetId: appointment._id,
+            });
+            await notificationToAdmin.save();
+            const adminSocketId = userSocketMap[admin._id.toString()];
+            if (adminSocketId) {
+                io.to(adminSocketId).emit('notification', notificationToAdmin);
+            }
+        }
+
+        res.json({ success: true, message: 'Appointment deleted successfully' });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
+        console.error(error);
+        res.status(500).json({ success: false, message: 'Server error' });
     }
 };
 
@@ -600,6 +691,27 @@ export const updateSlot = async (req, res) => {
             });
         }
 
+        // Notify patient if slot is booked
+        if (slot.isBooked) {
+            const appointment = await appointmentModel.findOne({ slotId: slot._id }).populate('patientId doctorId');
+            if (appointment) {
+                const io = getIO();
+                const userSocketMap = getUserSocketMap();
+                const message = `Your appointment with Dr. ${appointment.doctorId.name} has changed. New time: ${date} ${startTime12} - ${endTime12}`;
+                const notification = new notificationModel({
+                    userId: appointment.patientId._id,
+                    message: message,
+                    type: 'appointment',
+                    targetId: appointment._id,
+                });
+                await notification.save();
+                const patientSocketId = userSocketMap[appointment.patientId._id.toString()];
+                if (patientSocketId) {
+                    io.to(patientSocketId).emit('notification', notification);
+                }
+            }
+        }
+
         res.status(200).json({
             success: true,
             message: 'Slot updated successfully',
@@ -662,7 +774,7 @@ export const deleteSlot = async (req, res) => {
 export const adminUpdateAppointment = async (req, res) => {
     try {
         const { appointmentId } = req.params;
-        const { date, startTime, endTime, status, cancelReason } = req.body;
+        const { date, startTime, endTime, status } = req.body;
 
         // Validate input
         if (!date || !startTime || !endTime) {
@@ -743,11 +855,28 @@ export const adminUpdateAppointment = async (req, res) => {
             });
         }
 
+        // Notify patient if appointment is booked
+        if (appointment.status === 'Confirmed') {
+            const io = getIO();
+            const userSocketMap = getUserSocketMap();
+            const patient = await userModel.findById(appointment.patientId);
+            const doctor = await userModel.findById(appointment.doctorId);
+            const message = `Your appointment with Dr. ${doctor.name} has changed. New time: ${date} ${startTime12} - ${endTime12}`;
+            const notification = new notificationModel({
+                userId: patient._id,
+                message: message,
+                type: 'appointment',
+                targetId: appointment._id,
+            });
+            await notification.save();
+            const patientSocketId = userSocketMap[patient._id.toString()];
+            if (patientSocketId) {
+                io.to(patientSocketId).emit('notification', notification);
+            }
+        }
+
         // Update the appointment
         appointment.status = status;
-        if (status === 'Canceled') {
-            appointment.cancelReason = cancelReason;
-        }
         await appointment.save();
 
         // Populate the updated appointment with slot details
@@ -770,12 +899,14 @@ export const adminUpdateAppointment = async (req, res) => {
     }
 };
 
-// Admin: Delete appointment
+// Admin: Delete a specific appointment
 export const adminDeleteAppointment = async (req, res) => {
     try {
         const { appointmentId } = req.params;
+        const { io, userSocketMap } = req;
 
-        const appointment = await appointmentModel.findById(appointmentId);
+        const appointment = await appointmentModel.findById(appointmentId).populate('patientId doctorId');
+
         if (!appointment) {
             return res.status(404).json({
                 success: false,
@@ -788,24 +919,49 @@ export const adminDeleteAppointment = async (req, res) => {
             appointment.slotId,
             { isBooked: false }
         );
-
-        // Delete the appointment
+        
         await appointmentModel.findByIdAndDelete(appointmentId);
+
+        // Notify patient and doctor
+        const messageToPatient = `Your appointment with Dr. ${appointment.doctorId.name} has been canceled by the admin.`;
+        const notificationToPatient = new notificationModel({
+            userId: appointment.patientId._id,
+            message: messageToPatient,
+            type: 'appointment',
+            targetId: appointment._id,
+        });
+        await notificationToPatient.save();
+        const patientSocketId = userSocketMap[appointment.patientId._id.toString()];
+        if (patientSocketId) {
+            io.to(patientSocketId).emit('notification', notificationToPatient);
+        }
+
+        const messageToDoctor = `Your appointment with ${appointment.patientId.name} has been canceled by the admin.`;
+        const notificationToDoctor = new notificationModel({
+            userId: appointment.doctorId._id,
+            message: messageToDoctor,
+            type: 'appointment',
+            targetId: appointment._id,
+        });
+        await notificationToDoctor.save();
+        const doctorSocketId = userSocketMap[appointment.doctorId._id.toString()];
+        if (doctorSocketId) {
+            io.to(doctorSocketId).emit('notification', notificationToDoctor);
+        }
 
         res.status(200).json({
             success: true,
             message: 'Appointment deleted successfully'
         });
     } catch (error) {
-        console.error('Error deleting appointment:', error);
         res.status(500).json({
             success: false,
-            message: error.message || 'Error deleting appointment'
+            message: error.message
         });
     }
 };
 
-// Get doctor's slots (admin access)
+// Admin: Get all slots for a specific doctor
 export const getDoctorSlotsAdmin = async (req, res) => {
     try {
         const { doctorId } = req.params;
@@ -1097,33 +1253,130 @@ export const getPatientRecentAppointments = async (req, res) => {
     }
 };
 
+// Add/Update doctor's comment on an appointment
 export const updateDoctorComment = async (req, res) => {
     try {
-        const { id } = req.params;
+        const { appointmentId } = req.params;
         const { doctorComment } = req.body;
-        const userId = req.user.userId;
+        const { io, userSocketMap } = req;
 
-        const appointment = await appointmentModel.findById(id);
+        const appointment = await appointmentModel.findById(appointmentId).populate('patientId doctorId');
+
         if (!appointment) {
             return res.status(404).json({ success: false, message: 'Appointment not found' });
         }
 
-        // Check if the user is the doctor of this appointment
-        if (appointment.doctorId.toString() !== userId) {
-            return res.status(403).json({ success: false, message: 'Only the doctor can add comments' });
-        }
-
-        // Check if the appointment is completed
-        if (appointment.status !== 'Completed') {
-            return res.status(400).json({ success: false, message: 'Can only add comments to completed appointments' });
-        }
-
+        const isNewComment = !appointment.doctorComment;
         appointment.doctorComment = doctorComment;
         await appointment.save();
+        
+        // Notify patient
+        const message = isNewComment
+            ? `Dr. ${appointment.doctorId.name} left a comment on your appointment.`
+            : `Dr. ${appointment.doctorId.name} updated the comment on your appointment.`;
+        
+        const notification = new notificationModel({
+            userId: appointment.patientId._id,
+            message: message,
+            type: 'appointment',
+            targetId: appointment._id,
+        });
+        await notification.save();
 
-        res.json({ success: true, appointment });
+        const patientSocketId = userSocketMap[appointment.patientId._id.toString()];
+        if (patientSocketId) {
+            io.to(patientSocketId).emit('notification', notification);
+        }
+
+        res.json({ success: true, message: 'Comment updated successfully', appointment });
     } catch (error) {
-        console.error('Error updating doctor comment:', error);
-        res.status(500).json({ success: false, message: 'Error updating doctor comment' });
+        res.status(500).json({ success: false, message: 'Server error' });
     }
-}; 
+};
+
+// --- Appointment Reminder Scheduler ---
+const MS_PER_HOUR = 60 * 60 * 1000;
+const MS_PER_DAY = 24 * MS_PER_HOUR;
+
+const sendAppointmentReminders = async () => {
+    try {
+        const now = new Date();
+        const oneDayLater = new Date(now.getTime() + MS_PER_DAY);
+        const startWindow = new Date(oneDayLater.getTime() - MS_PER_HOUR); // 1 hour window before 24h
+        const endWindow = new Date(oneDayLater.getTime() + MS_PER_HOUR);   // 1 hour window after 24h
+
+        // Find all confirmed appointments with slot date in the window and not already reminded
+        const appointments = await appointmentModel.find({ status: 'Confirmed' })
+            .populate('slotId')
+            .populate('doctorId', 'name email')
+            .populate('patientId', 'name email');
+
+        for (const appointment of appointments) {
+            if (!appointment.slotId || !appointment.slotId.date) continue;
+            const slotDate = new Date(appointment.slotId.date);
+            // Combine date and startTime
+            let [startHour, startMinute] = [0, 0];
+            if (appointment.slotId.startTime) {
+                const timeMatch = appointment.slotId.startTime.match(/(\d+):(\d+)/);
+                if (timeMatch) {
+                    startHour = parseInt(timeMatch[1], 10);
+                    startMinute = parseInt(timeMatch[2], 10);
+                }
+            }
+            slotDate.setHours(startHour, startMinute, 0, 0);
+            if (slotDate >= startWindow && slotDate <= endWindow) {
+                // Check if already reminded (add a field or use notification existence)
+                const existingNotif = await notificationModel.findOne({
+                    userId: appointment.patientId._id,
+                    type: 'reminder',
+                    targetId: appointment._id
+                });
+                if (existingNotif) continue;
+                // Send email to patient
+                await sendAppointmentReminderEmail(
+                    appointment.patientId.email,
+                    appointment.patientId.name,
+                    appointment.slotId.date,
+                    appointment.slotId.startTime + ' - ' + appointment.slotId.endTime,
+                    appointment.doctorId.name,
+                    'Patient'
+                );
+                // Send email to doctor
+                await sendAppointmentReminderEmail(
+                    appointment.doctorId.email,
+                    appointment.doctorId.name,
+                    appointment.slotId.date,
+                    appointment.slotId.startTime + ' - ' + appointment.slotId.endTime,
+                    appointment.patientId.name,
+                    'Doctor'
+                );
+                // Create notification for patient
+                const notifPatient = new notificationModel({
+                    userId: appointment.patientId._id,
+                    message: `Reminder: You have an appointment with Dr. ${appointment.doctorId.name} tomorrow at ${appointment.slotId.startTime}.`,
+                    type: 'reminder',
+                    targetId: appointment._id
+                });
+                await notifPatient.save();
+                // Create notification for doctor
+                const notifDoctor = new notificationModel({
+                    userId: appointment.doctorId._id,
+                    message: `Reminder: You have an appointment with patient ${appointment.patientId.name} tomorrow at ${appointment.slotId.startTime}.`,
+                    type: 'reminder',
+                    targetId: appointment._id
+                });
+                await notifDoctor.save();
+                // Real-time notification (if online)
+                const { io, userSocketMap } = require('../socket.js');
+                const patientSocketId = userSocketMap[appointment.patientId._id.toString()];
+                if (patientSocketId) io.to(patientSocketId).emit('notification', notifPatient);
+                const doctorSocketId = userSocketMap[appointment.doctorId._id.toString()];
+                if (doctorSocketId) io.to(doctorSocketId).emit('notification', notifDoctor);
+            }
+        }
+    } catch (error) {
+        console.error('Error sending appointment reminders:', error);
+    }
+};
+setInterval(sendAppointmentReminders, 60 * 60 * 1000); // Run every hour
+// --- End Appointment Reminder Scheduler --- 

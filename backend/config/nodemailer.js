@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import { getWelcomeEmailTemplate, getVerificationEmailTemplate, getPasswordResetEmailTemplate, getContactFormEmailTemplate, getAccountDeletionEmailTemplate } from '../utils/emailTemplates.js';
+import { getWelcomeEmailTemplate, getVerificationEmailTemplate, getPasswordResetEmailTemplate, getContactFormEmailTemplate, getAccountDeletionEmailTemplate, getAppointmentReminderEmailTemplate } from '../utils/emailTemplates.js';
 
 const transporter = nodemailer.createTransport({
     host: 'smtp-relay.brevo.com',
@@ -100,11 +100,29 @@ const sendAccountDeletionEmail = async (email, name, role) => {
     }
 };
 
+// Send appointment reminder email
+const sendAppointmentReminderEmail = async (email, name, appointmentDate, appointmentTime, otherPartyName, role) => {
+    try {
+        const mailOptions = {
+            from: process.env.SENDER_EMAIL,
+            to: email,
+            subject: 'Appointment Reminder - vHealPoints',
+            html: getAppointmentReminderEmailTemplate(name, appointmentDate, appointmentTime, otherPartyName, role)
+        };
+        await transporter.sendMail(mailOptions);
+        return true;
+    } catch (error) {
+        console.error('Error sending appointment reminder email:', error);
+        return false;
+    }
+};
+
 export { 
     transporter, 
     sendWelcomeEmail, 
     sendVerificationEmail, 
     sendPasswordResetEmail, 
     sendContactFormEmail,
-    sendAccountDeletionEmail 
+    sendAccountDeletionEmail,
+    sendAppointmentReminderEmail
 };

@@ -335,10 +335,44 @@ const getAccountDeletionEmailTemplate = (name, role) => {
     `;
 };
 
+const getAppointmentReminderEmailTemplate = (recipientName, appointmentDate, appointmentTime, otherPartyName, role) => {
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background-color: #38B6FF; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
+            .content { background-color: #f9f9f9; padding: 20px; border-radius: 0 0 5px 5px; }
+            .footer { text-align: center; margin-top: 20px; font-size: 12px; color: #666; }
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <h1>Appointment Reminder</h1>
+        </div>
+        <div class="content">
+            <p>Dear ${recipientName},</p>
+            <p>This is a friendly reminder that you have an upcoming appointment ${role === 'Doctor' ? 'with patient' : 'with Dr.'} <b>${otherPartyName}</b>.</p>
+            <p><b>Date:</b> ${appointmentDate}<br/>
+            <b>Time:</b> ${appointmentTime}</p>
+            <p>Please make sure to be available at the scheduled time.</p>
+            <p>Best regards,<br/>The vHealPoints Team</p>
+        </div>
+        <div class="footer">
+            <p>This is an automated reminder from vHealPoints.</p>
+            <p>© 2025 vHealPoints. All rights reserved.</p>
+        </div>
+    </body>
+    </html>
+    `;
+};
+
 export {
     getWelcomeEmailTemplate,
     getVerificationEmailTemplate,
     getPasswordResetEmailTemplate,
     getContactFormEmailTemplate,
-    getAccountDeletionEmailTemplate
+    getAccountDeletionEmailTemplate,
+    getAppointmentReminderEmailTemplate
 }; 

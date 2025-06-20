@@ -3,13 +3,28 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { AppContext } from '../../context/AppContext';
 import { toast } from 'react-hot-toast';
-import { format } from 'date-fns';
+import { format, isValid, parseISO } from 'date-fns';
 import { FaArrowLeft, FaCalendarPlus, FaStar, FaEdit, FaStarHalfAlt } from 'react-icons/fa';
 import AppointmentDetailsModal from '../../components/patient/AppointmentDetailsModal';
 import DoctorRatingModal from '../../components/patient/DoctorRatingModal';
 import EditFeedbackModal from '../../components/patient/EditFeedbackModal';
 import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
 import '../../styles/components.css';
+
+// Helper to parse DD/MM/YYYY or ISO date
+function parseDateString(dateStr) {
+  // Try ISO first
+  let dateObj = new Date(dateStr);
+  if (isValid(dateObj)) return dateObj;
+  // Try DD/MM/YYYY
+  const match = /^([0-9]{2})\/([0-9]{2})\/([0-9]{4})$/.exec(dateStr);
+  if (match) {
+    const [, day, month, year] = match;
+    dateObj = new Date(`${year}-${month}-${day}`);
+    if (isValid(dateObj)) return dateObj;
+  }
+  return null;
+}
 
 const DoctorProfile = () => {
     const { doctorId } = useParams();
@@ -291,7 +306,9 @@ const DoctorProfile = () => {
                                         <div>
                                             <span className="font-medium text-gray-900 block">{rating.patientId?.name || 'Anonymous Patient'}</span>
                                             <span className="text-sm text-gray-500">
-                                                {format(new Date(rating.createdAt), 'MMM dd, yyyy')}
+                                                {rating.createdAt && isValid(new Date(rating.createdAt))
+                                                    ? format(new Date(rating.createdAt), 'MMM dd, yyyy')
+                                                    : 'N/A'}
                                             </span>
                                         </div>
                                     </div>
@@ -380,7 +397,15 @@ const DoctorProfile = () => {
                                         className="hover:bg-gray-50 cursor-pointer transition-colors"
                                     >
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            {appointment.slotId?.date ? format(new Date(appointment.slotId.date), 'MMM dd, yyyy') : 'N/A'}
+                                            {(() => {
+                                                const dateVal = appointment.slotId?.date;
+                                                const dateObj = dateVal ? parseDateString(dateVal) : null;
+                                                if (!dateObj) {
+                                                    console.warn('Invalid slot date for appointment:', appointment, 'Raw date:', dateVal);
+                                                    return <span className="text-red-500">Invalid date</span>;
+                                                }
+                                                return format(dateObj, 'MMM dd, yyyy');
+                                            })()}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             {appointment.slotId ? 

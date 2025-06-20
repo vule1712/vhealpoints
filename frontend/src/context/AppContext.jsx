@@ -1,6 +1,7 @@
 import axios from "axios";
 import React, { createContext, useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
+import { socket } from "../socket";
 
 export const AppContext = createContext()
 
@@ -69,6 +70,19 @@ export const AppContextProvider = (props) => {
         getAuthState()
     }, [backendUrl])
 
+    useEffect(() => {
+        if (isLoggedIn && userData) {
+            socket.io.opts.query = { userId: userData._id };
+            socket.connect();
+        } else {
+            socket.disconnect();
+        }
+
+        return () => {
+            socket.disconnect();
+        }
+    }, [isLoggedIn, userData]);
+
     const value = {
         backendUrl,
         isLoggedIn,
@@ -77,7 +91,8 @@ export const AppContextProvider = (props) => {
         setUserData,
         getUserData,
         logout,
-        isLoading
+        isLoading,
+        socket
     }
 
     return(

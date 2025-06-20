@@ -1,6 +1,7 @@
 import DoctorRating from '../models/DoctorRating.js';
 import Appointment from '../models/appointmentModel.js';
 import userModel from '../models/userModel.js';
+import notificationModel from '../models/notificationModel.js';
 
 // Check if patient can rate doctor
 export const canRateDoctor = async (req, res) => {
@@ -41,6 +42,7 @@ export const submitRating = async (req, res) => {
         const { doctorId } = req.params;
         const { rating, feedback } = req.body;
         const patientId = req.user.userId;
+        const { io, userSocketMap } = req;
 
         // Check if patient has any completed appointments
         const completedAppointments = await Appointment.find({
@@ -78,6 +80,22 @@ export const submitRating = async (req, res) => {
         });
 
         await newRating.save();
+
+        // Notify doctor
+        const patient = await userModel.findById(patientId);
+        const message = `You have a new rating from ${patient.name}.`;
+        const notification = new notificationModel({
+            userId: doctorId,
+            message: message,
+            type: 'rating',
+            targetId: newRating._id,
+        });
+        await notification.save();
+
+        const doctorSocketId = userSocketMap[doctorId];
+        if (doctorSocketId) {
+            io.to(doctorSocketId).emit('notification', notification);
+        }
 
         res.json({
             success: true,
@@ -142,6 +160,7 @@ export const updateRating = async (req, res) => {
         const { doctorId } = req.params;
         const { rating, feedback } = req.body;
         const patientId = req.user.userId;
+        const { io, userSocketMap } = req;
 
         // Find the existing rating
         const existingRating = await DoctorRating.findOne({
@@ -161,6 +180,22 @@ export const updateRating = async (req, res) => {
         existingRating.feedback = feedback;
         existingRating.createdAt = new Date();
         await existingRating.save();
+
+        // Notify doctor
+        const patient = await userModel.findById(patientId);
+        const message = `${patient.name} updated their rating for you.`;
+        const notification = new notificationModel({
+            userId: doctorId,
+            message: message,
+            type: 'rating',
+            targetId: existingRating._id,
+        });
+        await notification.save();
+
+        const doctorSocketId = userSocketMap[doctorId];
+        if (doctorSocketId) {
+            io.to(doctorSocketId).emit('notification', notification);
+        }
 
         // Populate the patient information
         const updatedRating = await DoctorRating.findById(existingRating._id)

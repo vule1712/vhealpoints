@@ -15,8 +15,6 @@ const AppointmentDetailsModal = ({
     onAppointmentUpdate 
 }) => {
     const { backendUrl } = React.useContext(AppContext);
-    const [showCancelForm, setShowCancelForm] = useState(false);
-    const [cancelReason, setCancelReason] = useState('');
     const [isEditing, setIsEditing] = useState(false);
     const [editedAppointment, setEditedAppointment] = useState(null);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -142,40 +140,6 @@ const AppointmentDetailsModal = ({
         }
     };
 
-    const handleCancelClick = () => {
-        setShowCancelForm(true);
-    };
-
-    const handleCancelSubmit = async () => {
-        if (!cancelReason.trim()) {
-            toast.error('Please provide a reason for cancellation');
-            return;
-        }
-
-        try {
-            const response = await axios.put(
-                `${backendUrl}/api/appointments/admin/${appointment._id}`,
-                { 
-                    status: 'Canceled',
-                    cancelReason 
-                },
-                { withCredentials: true }
-            );
-
-            if (response.data.success) {
-                toast.success('Appointment canceled successfully');
-                setShowCancelForm(false);
-                setCancelReason('');
-                onClose();
-                if (onAppointmentUpdate) {
-                    onAppointmentUpdate();
-                }
-            }
-        } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to cancel appointment');
-        }
-    };
-
     if (!showModal || !appointment) return null;
 
     return (
@@ -185,10 +149,6 @@ const AppointmentDetailsModal = ({
                     <button
                         onClick={() => {
                             onClose();
-                            setShowCancelForm(false);
-                            setCancelReason('');
-                            setIsEditing(false);
-                            setEditedAppointment(null);
                         }}
                         className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
                     >
@@ -260,14 +220,6 @@ const AppointmentDetailsModal = ({
                                 </div>
                             </>
                         )}
-                        {appointment.status === 'Canceled' && (
-                            <div>
-                                <p className="text-gray-600 text-sm">Cancellation Reason</p>
-                                <p className="font-semibold text-lg text-red-600">
-                                    {appointment.cancelReason || 'No reason provided'}
-                                </p>
-                            </div>
-                        )}
                         {appointment.status === 'Completed' && (
                             <div className="mt-6 p-4 border border-green-200 rounded-md bg-green-50">
                                 <h3 className="text-lg font-semibold text-green-800 mb-2">Doctor's Comment</h3>
@@ -283,36 +235,6 @@ const AppointmentDetailsModal = ({
                             </div>
                         )}
                     </div>
-
-                    {showCancelForm && (
-                        <div className="mt-6 p-4 border border-red-200 rounded-md bg-red-50">
-                            <p className="text-red-600 font-medium mb-2">Please provide a reason for cancellation:</p>
-                            <textarea
-                                value={cancelReason}
-                                onChange={(e) => setCancelReason(e.target.value)}
-                                className="w-full p-2 border border-red-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
-                                rows="3"
-                                placeholder="Enter reason for cancellation..."
-                            />
-                            <div className="mt-2 flex justify-end space-x-2">
-                                <button
-                                    onClick={() => {
-                                        setShowCancelForm(false);
-                                        setCancelReason('');
-                                    }}
-                                    className="px-3 py-1 text-gray-600 hover:text-gray-800"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={handleCancelSubmit}
-                                    className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-                                >
-                                    Submit
-                                </button>
-                            </div>
-                        </div>
-                    )}
 
                     <div className="mt-8 flex justify-between">
                         <div className="flex space-x-4">
@@ -372,11 +294,10 @@ const AppointmentDetailsModal = ({
                                         onClick={() => {
                                             onClose();
                                             setShowCancelForm(false);
-                                            setCancelReason('');
                                         }}
                                         className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
                                     >
-                                        Close
+                                        Cancel
                                     </button>
                                 </>
                             )}

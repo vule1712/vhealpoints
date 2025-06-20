@@ -25,9 +25,6 @@ const appointmentSchema = new mongoose.Schema({
     notes: {
         type: String
     },
-    cancelReason: {
-        type: String
-    },
     doctorComment: {
         type: String,
         default: ''

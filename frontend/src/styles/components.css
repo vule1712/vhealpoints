@@ -84,7 +84,8 @@
 }
 
 .navbar-logo {
-    width: 7rem;
+    width: 200px;
+    cursor: pointer;
 }
 
 @media (min-width: 640px) {
@@ -94,15 +95,15 @@
 }
 
 .user-avatar {
-    width: 2rem;
-    height: 2rem;
+    position: relative;
+    width: 40px;
+    height: 40px;
     display: flex;
     justify-content: center;
     align-items: center;
     border-radius: 9999px;
     background-color: black;
     color: white;
-    position: relative;
 }
 
 .user-menu {
@@ -416,4 +417,127 @@
         max-width: 800px;
         margin: 0 auto;
     }
+}
+
+.notification-bell {
+    position: relative;
+    cursor: pointer;
+}
+
+.bell-icon-container {
+    position: relative;
+}
+
+.bell-icon {
+    width: 24px;
+    height: 24px;
+    color: #333;
+}
+
+.notification-count {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background-color: #ff4d4f;
+    color: white;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 12px;
+    font-weight: bold;
+    border: 2px solid white;
+}
+
+.notification-dropdown {
+    position: absolute;
+    top: 45px;
+    right: 0;
+    background-color: white;
+    border: 1px solid #e8e8e8;
+    border-radius: 8px;
+    width: 350px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 1000;
+    overflow: hidden;
+}
+
+.notification-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid #e8e8e8;
+}
+
+.notification-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.mark-all-read-btn {
+    background: none;
+    border: none;
+    color: #1890ff;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 0;
+}
+
+.mark-all-read-btn:hover {
+    text-decoration: underline;
+}
+
+.notification-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.notification-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid #e8e8e8;
+    transition: background-color 0.3s;
+}
+
+.notification-item:last-child {
+    border-bottom: none;
+}
+
+.notification-item.unread {
+    background-color: #f6faff;
+}
+
+.notification-item:hover {
+    background-color: #f0f2f5;
+}
+
+.notification-icon {
+    width: 20px;
+    height: 20px;
+    margin-right: 12px;
+    color: #1890ff;
+}
+
+.notification-content {
+    flex-grow: 1;
+}
+
+.notification-content p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.4;
+    color: #333;
+}
+
+.notification-time {
+    font-size: 12px;
+    color: #888;
+}
+
+.no-notifications {
+    padding: 20px;
+    text-align: center;
+    color: #888;
 } 

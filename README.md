@@ -37,11 +37,11 @@
 
 ### 🗓️ Clinic Management
 - [x] Real-time Appointment Booking
-- [x] Medical Records Management
+- [x] Remind 24h before appointment
 - [x] Schedule Management
 - [x] Patient History Tracking
 - [x] Doctor's Feedbacks
-- [ ] Real-time notification using Socket.io *(Coming Soon)*
+- [x] Real-time notification using Socket.io
 
 ---
 
