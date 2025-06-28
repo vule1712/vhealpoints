@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState, useCallback } from 'react';
 import { AppContext } from '../../context/AppContext';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
@@ -10,7 +10,7 @@ import DoctorRatingStats from '../../components/admin/DoctorRatingStats';
 import refreshIcon from '../../assets/refresh_icon.png';
 
 const AdminDashboard = () => {
-    const { backendUrl, userData } = useContext(AppContext);
+    const { backendUrl, userData, socket } = useContext(AppContext);
     const [stats, setStats] = useState({
         totalAppointments: 0,
         todayAppointments: 0,
@@ -25,6 +25,81 @@ const AdminDashboard = () => {
     const [loading, setLoading] = useState(true);
     const [selectedAppointment, setSelectedAppointment] = useState(null);
     const [showModal, setShowModal] = useState(false);
+
+    // Separate function to fetch only today's schedule
+    const fetchTodayScheduleOnly = useCallback(async () => {
+        try {
+            const appointmentsResponse = await axios.get(`${backendUrl}/api/appointments/admin/all`, {
+                withCredentials: true
+            });
+
+            if (appointmentsResponse.data.success && Array.isArray(appointmentsResponse.data.data)) {
+                const appointments = appointmentsResponse.data.data;
+                
+                // Get today's schedule only
+                const today = appointments
+                    .filter(apt => {
+                        if (!apt.slotId?.date) return false;
+                        const [day, month, year] = apt.slotId.date.split('/');
+                        const appointmentDate = new Date(year, month - 1, day);
+                        return isToday(appointmentDate);
+                    })
+                    .sort((a, b) => {
+                        const [aDay, aMonth, aYear] = a.slotId.date.split('/');
+                        const [bDay, bMonth, bYear] = b.slotId.date.split('/');
+                        const aDate = new Date(aYear, aMonth - 1, aDay);
+                        const bDate = new Date(bYear, bMonth - 1, bDay);
+                        return aDate - bDate;
+                    });
+
+                setTodaySchedule(today);
+            }
+        } catch (error) {
+            console.error('Error fetching today\'s schedule:', error);
+        }
+    }, [backendUrl]);
+
+    // Connect to socket and listen for dashboard updates
+    useEffect(() => {
+        if (userData?._id && socket.connected) {
+            console.log('AdminDashboard: Setting up socket listener for admin:', userData._id);
+            console.log('AdminDashboard: Socket connected:', socket.connected);
+            console.log('AdminDashboard: Socket ID:', socket.id);
+            
+            // Listen for admin dashboard updates
+            socket.on('admin-dashboard-update', (updatedStats) => {
+                console.log('AdminDashboard: Received real-time stats update:', updatedStats);
+                setStats(prev => ({ ...prev, ...updatedStats }));
+                // Only refresh today's schedule, not all stats
+                fetchTodayScheduleOnly();
+            });
+
+            return () => {
+                console.log('AdminDashboard: Cleaning up socket listener');
+                socket.off('admin-dashboard-update');
+            };
+        } else if (userData?._id && !socket.connected) {
+            console.log('AdminDashboard: Socket not connected yet, waiting...');
+            // Wait for socket to connect
+            const handleConnect = () => {
+                console.log('AdminDashboard: Socket connected, setting up listener');
+                socket.on('admin-dashboard-update', (updatedStats) => {
+                    console.log('AdminDashboard: Received real-time stats update:', updatedStats);
+                    setStats(prev => ({ ...prev, ...updatedStats }));
+                    // Only refresh today's schedule, not all stats
+                    fetchTodayScheduleOnly();
+                });
+            };
+            
+            socket.on('connect', handleConnect);
+            
+            return () => {
+                console.log('AdminDashboard: Cleaning up socket listener');
+                socket.off('connect', handleConnect);
+                socket.off('admin-dashboard-update');
+            };
+        }
+    }, [userData, socket.connected, fetchTodayScheduleOnly]);
 
     const fetchDashboardData = async () => {
         try {

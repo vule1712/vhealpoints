@@ -2,8 +2,9 @@ import appointmentModel from '../models/appointmentModel.js';
 import availableSlotModel from '../models/availableSlotModel.js';
 import userModel from '../models/userModel.js';
 import notificationModel from '../models/notificationModel.js';
-import { getIO, getUserSocketMap } from '../socket.js';
+import { getIO, getUserSocketMap, emitAdminDashboardUpdate, emitDoctorDashboardUpdate, emitPatientDashboardUpdate } from '../socket.js';
 import { sendAppointmentReminderEmail } from '../config/nodemailer.js';
+import { isToday } from 'date-fns';
 
 // Helper function to convert 12-hour time to 24-hour time for comparison
 const convertTo24Hour = (time12h) => {
@@ -89,7 +90,7 @@ const checkAndUpdateAppointmentStatus = async (appointment) => {
                     appointment._id,
                     { status: 'Completed' },
                     { new: true }
-                ).populate('doctorId');
+                ).populate('doctorId').populate('patientId');
                 
                 appointment.status = 'Completed';
 
@@ -99,16 +100,39 @@ const checkAndUpdateAppointmentStatus = async (appointment) => {
                     // Notify patient
                     const messageToPatient = `Your appointment with Dr. ${updatedAppointment.doctorId.name} has been completed.`;
                     const notificationToPatient = new notificationModel({
-                        userId: updatedAppointment.patientId,
+                        userId: updatedAppointment.patientId._id,
                         message: messageToPatient,
                         type: 'appointment',
                         targetId: updatedAppointment._id,
                     });
                     await notificationToPatient.save();
-                    const patientSocketId = userSocketMap[updatedAppointment.patientId.toString()];
+                    const patientSocketId = userSocketMap[updatedAppointment.patientId._id.toString()];
                     if (patientSocketId) {
                         io.to(patientSocketId).emit('notification', notificationToPatient);
                     }
+                    // Notify doctor
+                    const messageToDoctor = `Your appointment with patient ${updatedAppointment.patientId.name} has been completed.`;
+                    const notificationToDoctor = new notificationModel({
+                        userId: updatedAppointment.doctorId._id,
+                        message: messageToDoctor,
+                        type: 'appointment',
+                        targetId: updatedAppointment._id,
+                    });
+                    await notificationToDoctor.save();
+                    const doctorSocketId = userSocketMap[updatedAppointment.doctorId._id.toString()];
+                    if (doctorSocketId) {
+                        io.to(doctorSocketId).emit('notification', notificationToDoctor);
+                    }
+
+                    // Create a copy of the appointment with correct ID structure for emitDashboardUpdates
+                    const appointmentForUpdates = {
+                        ...updatedAppointment.toObject(),
+                        doctorId: updatedAppointment.doctorId._id,
+                        patientId: updatedAppointment.patientId._id
+                    };
+
+                    // Emit dashboard updates for all roles
+                    await emitDashboardUpdates(appointmentForUpdates);
                 }
             }
         }
@@ -135,6 +159,128 @@ const checkAllAppointments = async () => {
 
 // Set up periodic check every minute
 setInterval(checkAllAppointments, 60000);
+
+// Helper function to calculate and emit dashboard updates
+const emitDashboardUpdates = async (appointment = null, isDeletion = false) => {
+    try {
+        console.log('=== emitDashboardUpdates START ===');
+        console.log('emitDashboardUpdates called with appointment:', appointment ? {
+            id: appointment._id,
+            doctorId: appointment.doctorId,
+            patientId: appointment.patientId,
+            status: appointment.status
+        } : 'null');
+        console.log('isDeletion:', isDeletion);
+
+        // Calculate admin dashboard stats
+        let allAppointments = await appointmentModel.find().populate('slotId');
+        
+        // If this is a deletion, exclude the appointment being deleted from the count
+        if (isDeletion && appointment) {
+            allAppointments = allAppointments.filter(apt => apt._id.toString() !== appointment._id.toString());
+        }
+        
+        console.log('Total appointments found:', allAppointments.length);
+        
+        const adminStats = {
+            totalAppointments: allAppointments.length,
+            todayAppointments: allAppointments.filter(apt => {
+                if (!apt.slotId?.date) return false;
+                const [day, month, year] = apt.slotId.date.split('/');
+                const appointmentDate = new Date(year, month - 1, day);
+                return isToday(appointmentDate);
+            }).length,
+            confirmedAppointments: allAppointments.filter(apt => apt.status === 'Confirmed').length,
+            completedAppointments: allAppointments.filter(apt => apt.status === 'Completed').length
+        };
+
+        // Get user stats for admin
+        const totalUsers = await userModel.countDocuments();
+        const verifiedUsers = await userModel.countDocuments({ isVerified: true });
+        const doctors = await userModel.countDocuments({ role: 'doctor' });
+        const patients = await userModel.countDocuments({ role: 'patient' });
+
+        adminStats.totalUsers = totalUsers;
+        adminStats.verifiedUsers = verifiedUsers;
+        adminStats.doctors = doctors;
+        adminStats.patients = patients;
+
+        // Emit admin dashboard update
+        emitAdminDashboardUpdate(adminStats);
+        console.log('Sent admin dashboard update:', adminStats);
+
+        // If we have a specific appointment, calculate role-specific updates
+        if (appointment) {
+            console.log('Processing role-specific updates for appointment:', appointment._id);
+            console.log('Appointment doctorId type:', typeof appointment.doctorId, 'value:', appointment.doctorId);
+            console.log('Appointment patientId type:', typeof appointment.patientId, 'value:', appointment.patientId);
+            
+            // Doctor dashboard update
+            let doctorAppointments = await appointmentModel.find({ 
+                doctorId: appointment.doctorId 
+            }).populate('slotId');
+            
+            // If this is a deletion, exclude the appointment being deleted
+            if (isDeletion) {
+                doctorAppointments = doctorAppointments.filter(apt => apt._id.toString() !== appointment._id.toString());
+            }
+            
+            console.log('Found doctor appointments:', doctorAppointments.length, 'for doctorId:', appointment.doctorId);
+            
+            const doctorStats = {
+                totalAppointments: doctorAppointments.length,
+                todayAppointments: doctorAppointments.filter(apt => {
+                    if (!apt.slotId?.date) return false;
+                    const [day, month, year] = apt.slotId.date.split('/');
+                    const appointmentDate = new Date(year, month - 1, day);
+                    return isToday(appointmentDate);
+                }).length,
+                confirmedAppointments: doctorAppointments.filter(apt => apt.status === 'Confirmed').length,
+                completedAppointments: doctorAppointments.filter(apt => apt.status === 'Completed').length
+            };
+
+            // Get doctor's total patients
+            const uniquePatients = new Set(doctorAppointments.map(apt => apt.patientId.toString()));
+            doctorStats.totalPatients = uniquePatients.size;
+
+            console.log('Doctor stats calculated:', doctorStats);
+            emitDoctorDashboardUpdate(appointment.doctorId.toString(), doctorStats);
+            console.log('Sent doctor dashboard update for doctorId:', appointment.doctorId.toString(), 'stats:', doctorStats);
+
+            // Patient dashboard update
+            let patientAppointments = await appointmentModel.find({ 
+                patientId: appointment.patientId 
+            }).populate('slotId');
+            
+            // If this is a deletion, exclude the appointment being deleted
+            if (isDeletion) {
+                patientAppointments = patientAppointments.filter(apt => apt._id.toString() !== appointment._id.toString());
+            }
+            
+            console.log('Found patient appointments:', patientAppointments.length, 'for patientId:', appointment.patientId);
+            
+            const patientStats = {
+                totalAppointments: patientAppointments.length,
+                todayAppointments: patientAppointments.filter(apt => {
+                    if (!apt.slotId?.date) return false;
+                    const [day, month, year] = apt.slotId.date.split('/');
+                    const appointmentDate = new Date(year, month - 1, day);
+                    return isToday(appointmentDate);
+                }).length,
+                confirmedAppointments: patientAppointments.filter(apt => apt.status === 'Confirmed').length,
+                completedAppointments: patientAppointments.filter(apt => apt.status === 'Completed').length
+            };
+
+            console.log('Patient stats calculated:', patientStats);
+            emitPatientDashboardUpdate(appointment.patientId.toString(), patientStats);
+            console.log('Sent patient dashboard update for patientId:', appointment.patientId.toString(), 'stats:', patientStats);
+        }
+        console.log('=== emitDashboardUpdates END ===');
+    } catch (error) {
+        console.error('Error emitting dashboard updates:', error);
+        console.error('Error stack:', error.stack);
+    }
+};
 
 // Helper: convert 12-hour or 24-hour time string to minutes since midnight
 function timeStringToMinutes(time) {
@@ -218,8 +364,18 @@ export const createAppointment = async (req, res) => {
         await notificationToDoctor.save();
 
         const doctorSocketId = userSocketMap[doctorId];
+        console.log('Sending notification to doctor:', {
+            doctorId,
+            doctorSocketId,
+            message: messageToDoctor,
+            userSocketMap: Object.keys(userSocketMap)
+        });
+        
         if (doctorSocketId) {
             io.to(doctorSocketId).emit('notification', notificationToDoctor);
+            console.log('Notification sent to doctor via socket');
+        } else {
+            console.log('Doctor not connected to socket');
         }
 
         const admins = await userModel.find({ role: 'Admin' });
@@ -237,6 +393,9 @@ export const createAppointment = async (req, res) => {
                 io.to(adminSocketId).emit('notification', notificationToAdmin);
             }
         }
+
+        // Emit dashboard updates for all roles
+        await emitDashboardUpdates(appointment);
 
         res.json({
             success: true,
@@ -371,6 +530,22 @@ export const updateAppointmentStatus = async (req, res) => {
         
         await appointment.save();
         
+        // Populate the updated appointment with slot details
+        const updatedAppointment = await appointmentModel.findById(appointmentId)
+            .populate('doctorId', 'name email specialization clinicName')
+            .populate('patientId', 'name email')
+            .populate('slotId');
+
+        // Create a copy of the appointment with correct ID structure for emitDashboardUpdates
+        const appointmentForUpdates = {
+            ...updatedAppointment.toObject(),
+            doctorId: updatedAppointment.doctorId._id,
+            patientId: updatedAppointment.patientId._id
+        };
+
+        // Emit dashboard updates for all roles
+        await emitDashboardUpdates(appointmentForUpdates);
+        
         res.status(200).json({
             success: true,
             data: appointment
@@ -401,10 +576,20 @@ export const deleteAppointment = async (req, res) => {
 
         const deletedByDoctor = appointment.doctorId._id.toString() === patientId;
 
+        // Create a copy of the appointment with correct ID structure for emitDashboardUpdates
+        const appointmentForUpdates = {
+            ...appointment.toObject(),
+            doctorId: appointment.doctorId._id,
+            patientId: appointment.patientId._id
+        };
+
+        // Emit dashboard updates for all roles BEFORE deleting the appointment
+        await emitDashboardUpdates(appointmentForUpdates, true);
+
         await appointmentModel.findByIdAndDelete(appointmentId);
 
         // Notify doctor and admins
-        const messageToDoctor = `Appointment with ${appointment.patientId.name} has been canceled.`;
+        const messageToDoctor = `Appointment with ${appointment.patientId.name} has been canceled by the patient.`;
         const notificationToDoctor = new notificationModel({
             userId: appointment.doctorId._id,
             message: messageToDoctor,
@@ -885,6 +1070,16 @@ export const adminUpdateAppointment = async (req, res) => {
             .populate('patientId', 'name email')
             .populate('slotId');
 
+        // Create a copy of the appointment with correct ID structure for emitDashboardUpdates
+        const appointmentForUpdates = {
+            ...updatedAppointment.toObject(),
+            doctorId: updatedAppointment.doctorId._id,
+            patientId: updatedAppointment.patientId._id
+        };
+
+        // Emit dashboard updates for all roles
+        await emitDashboardUpdates(appointmentForUpdates);
+
         res.status(200).json({
             success: true,
             message: 'Appointment updated successfully',
@@ -914,11 +1109,25 @@ export const adminDeleteAppointment = async (req, res) => {
             });
         }
 
+        // Store the IDs before deleting the appointment
+        const doctorId = appointment.doctorId._id;
+        const patientId = appointment.patientId._id;
+
         // Update the slot availability
         await availableSlotModel.findByIdAndUpdate(
             appointment.slotId,
             { isBooked: false }
         );
+        
+        // Create a copy of the appointment with correct ID structure for emitDashboardUpdates
+        const appointmentForUpdates = {
+            ...appointment.toObject(),
+            doctorId: doctorId,
+            patientId: patientId
+        };
+        
+        // Emit dashboard updates for all roles BEFORE deleting the appointment
+        await emitDashboardUpdates(appointmentForUpdates, true);
         
         await appointmentModel.findByIdAndDelete(appointmentId);
 

@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState, useCallback } from 'react';
 import { AppContext } from '../../context/AppContext';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
@@ -9,7 +9,7 @@ import TodaySchedule from '../../components/patient/TodaySchedule';
 import refreshIcon from '../../assets/refresh_icon.png';
 
 const PatientDashboard = () => {
-    const { backendUrl, userData } = useContext(AppContext);
+    const { backendUrl, userData, socket } = useContext(AppContext);
     const [stats, setStats] = useState({
         totalAppointments: 0,
         todayAppointments: 0,
@@ -20,6 +20,91 @@ const PatientDashboard = () => {
     const [loading, setLoading] = useState(true);
     const [selectedAppointment, setSelectedAppointment] = useState(null);
     const [showModal, setShowModal] = useState(false);
+
+    // Separate function to fetch only today's schedule
+    const fetchTodayScheduleOnly = useCallback(async () => {
+        try {
+            const appointmentsResponse = await axios.get(`${backendUrl}/api/appointments/patient`, {
+                withCredentials: true
+            });
+
+            if (appointmentsResponse.data.success) {
+                const appointments = appointmentsResponse.data.appointments;
+                
+                // Get today's schedule only
+                const today = appointments
+                    .filter(apt => {
+                        if (!apt.slotId?.date) return false;
+                        const [day, month, year] = apt.slotId.date.split('/');
+                        const slotDate = new Date(year, month - 1, day);
+                        return isToday(slotDate);
+                    })
+                    .sort((a, b) => new Date(a.slotId.startTime) - new Date(b.slotId.startTime));
+
+                setTodaySchedule(today);
+            }
+        } catch (error) {
+            console.error('Error fetching today\'s schedule:', error);
+        }
+    }, [backendUrl]);
+
+    // Connect to socket and listen for dashboard updates
+    useEffect(() => {
+        console.log('PatientDashboard: useEffect triggered with userData:', userData?._id, 'socket.connected:', socket.connected);
+        
+        if (userData?._id && socket.connected) {
+            console.log('PatientDashboard: Setting up socket listener for patient:', userData._id);
+            console.log('PatientDashboard: Socket connected:', socket.connected);
+            console.log('PatientDashboard: Socket ID:', socket.id);
+            
+            // Listen for patient dashboard updates
+            const handleDashboardUpdate = (updatedStats) => {
+                console.log('PatientDashboard: Received real-time stats update:', updatedStats);
+                console.log('PatientDashboard: Current stats before update:', stats);
+                setStats(prev => {
+                    const newStats = { ...prev, ...updatedStats };
+                    console.log('PatientDashboard: New stats after update:', newStats);
+                    return newStats;
+                });
+                // Only refresh today's schedule, not all stats
+                fetchTodayScheduleOnly();
+            };
+            
+            socket.on('patient-dashboard-update', handleDashboardUpdate);
+
+            return () => {
+                console.log('PatientDashboard: Cleaning up socket listener');
+                socket.off('patient-dashboard-update', handleDashboardUpdate);
+            };
+        } else if (userData?._id && !socket.connected) {
+            console.log('PatientDashboard: Socket not connected yet, waiting...');
+            // Wait for socket to connect
+            const handleConnect = () => {
+                console.log('PatientDashboard: Socket connected, setting up listener');
+                const handleDashboardUpdate = (updatedStats) => {
+                    console.log('PatientDashboard: Received real-time stats update:', updatedStats);
+                    console.log('PatientDashboard: Current stats before update:', stats);
+                    setStats(prev => {
+                        const newStats = { ...prev, ...updatedStats };
+                        console.log('PatientDashboard: New stats after update:', newStats);
+                        return newStats;
+                    });
+                    // Only refresh today's schedule, not all stats
+                    fetchTodayScheduleOnly();
+                };
+                
+                socket.on('patient-dashboard-update', handleDashboardUpdate);
+            };
+            
+            socket.on('connect', handleConnect);
+            
+            return () => {
+                console.log('PatientDashboard: Cleaning up socket listener');
+                socket.off('connect', handleConnect);
+                socket.off('patient-dashboard-update');
+            };
+        }
+    }, [userData, socket.connected, fetchTodayScheduleOnly]);
 
     const fetchDashboardData = async () => {
         try {
@@ -73,6 +158,11 @@ const PatientDashboard = () => {
     useEffect(() => {
         fetchDashboardData();
     }, [backendUrl]);
+
+    // Debug: Log stats changes
+    useEffect(() => {
+        console.log('PatientDashboard: Stats state changed:', stats);
+    }, [stats]);
 
     const formatTime = (timeString) => {
         try {
@@ -151,9 +241,8 @@ const PatientDashboard = () => {
                     <button
                         className="px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors flex items-center justify-center"
                         onClick={fetchDashboardData}
-                        title="Reload dashboard"
                     >
-                        <img src={refreshIcon} alt="Reload" className="w-5 h-5" />
+                        <img src={refreshIcon} alt="Refresh" className="w-5 h-5" />
                     </button>
                 </div>
             </div>

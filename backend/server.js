@@ -11,7 +11,6 @@ import adminRouter from './routes/adminRoutes.js';
 import appointmentRouter from './routes/appointmentRoutes.js';
 import doctorRouter from './routes/doctorRoutes.js';
 import contactRouter from './routes/contactRoutes.js';
-import './middleware/appointmentStatusUpdater.js';
 import doctorRatingRoutes from './routes/doctorRatingRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 

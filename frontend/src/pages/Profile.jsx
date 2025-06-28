@@ -410,7 +410,7 @@ const Profile = () => {
                                                         </div>
                                                         {rating.feedback && (
                                                             <p className="text-gray-600 text-sm mt-2">
-                                                                "{rating.feedback}"
+                                                                {rating.feedback}
                                                             </p>
                                                         )}
                                                         <p className="text-gray-400 text-xs mt-2">

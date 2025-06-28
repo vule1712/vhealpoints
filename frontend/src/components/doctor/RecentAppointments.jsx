@@ -9,7 +9,7 @@ const RecentAppointments = () => {
     const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const { backendUrl } = useContext(AppContext);
+    const { backendUrl, socket } = useContext(AppContext);
 
     const formatTime = (timeString) => {
         try {
@@ -54,6 +54,44 @@ const RecentAppointments = () => {
             setLoading(false);
         }
     };
+
+    // Socket listener for real-time updates
+    useEffect(() => {
+        if (socket.connected) {
+            console.log('Doctor RecentAppointments: Setting up socket listener');
+            
+            const handleDashboardUpdate = () => {
+                console.log('Doctor RecentAppointments: Received dashboard update, refreshing data');
+                fetchRecentAppointments();
+            };
+            
+            socket.on('doctor-dashboard-update', handleDashboardUpdate);
+            
+            return () => {
+                console.log('Doctor RecentAppointments: Cleaning up socket listener');
+                socket.off('doctor-dashboard-update', handleDashboardUpdate);
+            };
+        } else {
+            console.log('Doctor RecentAppointments: Socket not connected, waiting...');
+            const handleConnect = () => {
+                console.log('Doctor RecentAppointments: Socket connected, setting up listener');
+                const handleDashboardUpdate = () => {
+                    console.log('Doctor RecentAppointments: Received dashboard update, refreshing data');
+                    fetchRecentAppointments();
+                };
+                
+                socket.on('doctor-dashboard-update', handleDashboardUpdate);
+            };
+            
+            socket.on('connect', handleConnect);
+            
+            return () => {
+                console.log('Doctor RecentAppointments: Cleaning up socket listener');
+                socket.off('connect', handleConnect);
+                socket.off('doctor-dashboard-update');
+            };
+        }
+    }, [socket.connected, backendUrl]);
 
     useEffect(() => {
         fetchRecentAppointments();

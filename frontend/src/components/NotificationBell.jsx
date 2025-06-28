@@ -26,13 +26,22 @@ const NotificationBell = () => {
 
     useEffect(() => {
         if (socket && userData) {
+        console.log('NotificationBell: Setting up socket listener for user:', userData._id);
         fetchNotifications();
 
+        // Test if socket is working
+        socket.on('connect', () => {
+            console.log('NotificationBell: Socket connected');
+        });
+
         socket.on('notification', (newNotification) => {
+            console.log('NotificationBell: Received notification via socket:', newNotification);
             setNotifications((prevNotifications) => [newNotification, ...prevNotifications]);
         });
 
         return () => {
+            console.log('NotificationBell: Cleaning up socket listener');
+            socket.off('connect');
             socket.off('notification');
         };
         }

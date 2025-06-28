@@ -72,13 +72,54 @@ export const AppContextProvider = (props) => {
 
     useEffect(() => {
         if (isLoggedIn && userData) {
-            socket.io.opts.query = { userId: userData._id };
+            console.log('AppContext: Setting up socket connection for user:', userData._id);
+            socket.auth.userId = userData._id;
             socket.connect();
+            
+            // Add debugging
+            socket.on('connect', () => {
+                console.log('AppContext: Socket connected with userId:', userData._id);
+                console.log('AppContext: Socket ID:', socket.id);
+            });
+            
+            socket.on('disconnect', () => {
+                console.log('AppContext: Socket disconnected');
+            });
+            
+            socket.on('connect_error', (error) => {
+                console.error('AppContext: Socket connection error:', error);
+            });
+            
+            // Add specific event listeners for debugging
+            const handleDoctorUpdate = (data) => {
+                console.log('AppContext: Received doctor-dashboard-update event:', data);
+            };
+            
+            const handlePatientUpdate = (data) => {
+                console.log('AppContext: Received patient-dashboard-update event:', data);
+            };
+            
+            const handleAdminUpdate = (data) => {
+                console.log('AppContext: Received admin-dashboard-update event:', data);
+            };
+            
+            socket.on('doctor-dashboard-update', handleDoctorUpdate);
+            socket.on('patient-dashboard-update', handlePatientUpdate);
+            socket.on('admin-dashboard-update', handleAdminUpdate);
+            
         } else {
+            console.log('AppContext: Disconnecting socket - not logged in or no user data');
             socket.disconnect();
         }
 
         return () => {
+            console.log('AppContext: Cleaning up socket connection');
+            socket.off('connect');
+            socket.off('disconnect');
+            socket.off('connect_error');
+            socket.off('doctor-dashboard-update');
+            socket.off('patient-dashboard-update');
+            socket.off('admin-dashboard-update');
             socket.disconnect();
         }
     }, [isLoggedIn, userData]);

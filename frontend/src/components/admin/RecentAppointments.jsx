@@ -9,7 +9,7 @@ const RecentAppointments = () => {
     const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const { backendUrl } = useContext(AppContext);
+    const { backendUrl, socket } = useContext(AppContext);
 
     const formatTime = (timeString) => {
         try {
@@ -59,6 +59,44 @@ const RecentAppointments = () => {
             setLoading(false);
         }
     };
+
+    // Socket listener for real-time updates
+    useEffect(() => {
+        if (socket.connected) {
+            console.log('Admin RecentAppointments: Setting up socket listener');
+            
+            const handleDashboardUpdate = () => {
+                console.log('Admin RecentAppointments: Received dashboard update, refreshing data');
+                fetchRecentAppointments();
+            };
+            
+            socket.on('admin-dashboard-update', handleDashboardUpdate);
+            
+            return () => {
+                console.log('Admin RecentAppointments: Cleaning up socket listener');
+                socket.off('admin-dashboard-update', handleDashboardUpdate);
+            };
+        } else {
+            console.log('Admin RecentAppointments: Socket not connected, waiting...');
+            const handleConnect = () => {
+                console.log('Admin RecentAppointments: Socket connected, setting up listener');
+                const handleDashboardUpdate = () => {
+                    console.log('Admin RecentAppointments: Received dashboard update, refreshing data');
+                    fetchRecentAppointments();
+                };
+                
+                socket.on('admin-dashboard-update', handleDashboardUpdate);
+            };
+            
+            socket.on('connect', handleConnect);
+            
+            return () => {
+                console.log('Admin RecentAppointments: Cleaning up socket listener');
+                socket.off('connect', handleConnect);
+                socket.off('admin-dashboard-update');
+            };
+        }
+    }, [socket.connected, backendUrl]);
 
     useEffect(() => {
         fetchRecentAppointments();
