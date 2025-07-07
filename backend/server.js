@@ -23,9 +23,7 @@ connectDB();
 const allowedOrigins = [
         'http://localhost:5173',
         'https://vhealpoints.vercel.app',
-        'https://vhealpoints-mgqe4gmly-vulephuonganhs-projects.vercel.app',
-        /^https:\/\/vhealpoints.*\.vercel\.app$/, // Allow all Vercel preview domains
-        'https://vhealpoints.onrender.com'
+        'https://vhealpoints-d8n0s3npo-vulephuonganhs-projects.vercel.app'
     ];
 
 app.use(express.json());
