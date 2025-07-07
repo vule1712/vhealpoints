@@ -3,7 +3,7 @@ import userModel from '../models/userModel.js';
 
 const userAuth = async (req, res, next) => {
     const {token} = req.cookies;
-    
+
     console.log('userAuth middleware - cookies:', req.cookies);
     console.log('userAuth middleware - token:', token);
 

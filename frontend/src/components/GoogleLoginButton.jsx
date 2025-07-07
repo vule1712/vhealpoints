@@ -7,7 +7,7 @@ import { AppContext } from '../context/AppContext';
 
 const GoogleLoginButton = () => {
     const navigate = useNavigate();
-    const { backendUrl, setIsLoggedIn, getUserData } = useContext(AppContext);
+    const { backendUrl, setIsLoggedIn, setUserData } = useContext(AppContext);
 
     const login = useGoogleLogin({
         onSuccess: async (tokenResponse) => {
@@ -19,9 +19,12 @@ const GoogleLoginButton = () => {
                 });
 
                 if (data.success) {
+                    console.log('Google Login - Full response:', data);
                     setIsLoggedIn(true);
-                    const userData = await getUserData();
-                    console.log('Google Login - User data received:', userData);
+                    // Set user data directly in context
+                    setUserData(data.user);
+                    console.log('Google Login - User data set in context:', data.user);
+                    console.log('Google Login - isAccountVerified:', data.user.isAccountVerified);
                     
                     // Google accounts are pre-verified, so redirect directly
                     navigate('/');

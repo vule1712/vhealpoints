@@ -36,6 +36,10 @@ import DoctorRatingForm from './components/patient/DoctorRatingForm'
 const ProtectedRoute = ({ children }) => {
     const { isLoggedIn, userData, isLoading } = useContext(AppContext);
 
+    console.log('ProtectedRoute - isLoggedIn:', isLoggedIn);
+    console.log('ProtectedRoute - userData:', userData);
+    console.log('ProtectedRoute - isLoading:', isLoading);
+
     if (isLoading) {
         return (
             <div className="admin-loading-spinner">
@@ -45,17 +49,21 @@ const ProtectedRoute = ({ children }) => {
     }
 
     if (!isLoggedIn) {
+        console.log('ProtectedRoute - Redirecting to login (not logged in)');
         return <Navigate to="/login" />;
     }
 
     if (!userData) {
+        console.log('ProtectedRoute - Redirecting to login (no user data)');
         return <Navigate to="/login" />;
     }
     
     if (!userData.isAccountVerified) {
+        console.log('ProtectedRoute - Redirecting to email-verify (not verified)');
         return <Navigate to="/email-verify" />;
     }
 
+    console.log('ProtectedRoute - Allowing access');
     return children;
 };
 

@@ -25,7 +25,7 @@ export const AppContextProvider = (props) => {
                     setUserData(data.userData)
                 } else {
                     // Fallback to separate call if userData not in response
-                    await getUserData()
+                await getUserData()
                 }
             } else {
                 setIsLoggedIn(false)
