@@ -23,34 +23,13 @@ connectDB();
 const allowedOrigins = [
         'http://localhost:5173',
         'https://vhealpoints.vercel.app',
-        'https://vhealpoints-mgqe4gmly-vulephuonganhs-projects.vercel.app',
-        /^https:\/\/vhealpoints.*\.vercel\.app$/, // Allow all Vercel preview domains
-        'https://vhealpoints.onrender.com'
+        'https://vhealpoints-d8n0s3npo-vulephuonganhs-projects.vercel.app'
     ];
 
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
-    origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) return callback(null, true);
-        
-        // Check if origin is in allowedOrigins array or matches regex patterns
-        const isAllowed = allowedOrigins.some(allowedOrigin => {
-            if (typeof allowedOrigin === 'string') {
-                return allowedOrigin === origin;
-            } else if (allowedOrigin instanceof RegExp) {
-                return allowedOrigin.test(origin);
-            }
-            return false;
-        });
-        
-        if (isAllowed) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
+    origin: allowedOrigins, 
     credentials: true
 }));
 
