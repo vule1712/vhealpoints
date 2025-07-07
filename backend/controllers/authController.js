@@ -1,7 +1,11 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { OAuth2Client } from 'google-auth-library';
 import userModel from '../models/userModel.js';
 import { sendWelcomeEmail, sendVerificationEmail, sendPasswordResetEmail } from '../config/nodemailer.js';
+
+// Initialize Google OAuth client
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 export const register = async (req, res) => {
     const {name, email, password, role} = req.body;
@@ -255,3 +259,90 @@ export const resetPassword = async (req, res) => {
         
     }
 }
+
+// Google OAuth Login
+export const googleLogin = async (req, res) => {
+    try {
+        const { token } = req.body;
+
+        if (!token) {
+            return res.json({ success: false, message: 'Google token is required' });
+        }
+
+        // Get user info from Google using access token
+        const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!userInfoResponse.ok) {
+            return res.json({ success: false, message: 'Failed to get user info from Google' });
+        }
+
+        const userInfo = await userInfoResponse.json();
+        const { id: googleId, email, name, picture } = userInfo;
+
+        // Check if user already exists with this Google ID
+        let user = await userModel.findOne({ googleId });
+
+        if (!user) {
+            // Check if user exists with this email but different login method
+            user = await userModel.findOne({ email });
+            
+            if (user) {
+                // User exists but hasn't linked Google account
+                if (user.googleId) {
+                    return res.json({ success: false, message: 'Account already exists with different login method' });
+                }
+                
+                // Link Google account to existing user
+                user.googleId = googleId;
+                user.googleEmail = email;
+                user.avatar = picture;
+                user.isAccountVerified = true; // Google accounts are pre-verified
+                await user.save();
+            } else {
+                // Create new user with Google OAuth - always as Patient
+                user = new userModel({
+                    name,
+                    email,
+                    googleId,
+                    googleEmail: email,
+                    avatar: picture,
+                    role: 'Patient', // Always create as Patient
+                    isAccountVerified: true // Google accounts are pre-verified
+                });
+                await user.save();
+
+                // Send welcome email
+                await sendWelcomeEmail(email, name);
+            }
+        }
+
+        // Generate JWT token
+        const jwtToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+        res.cookie('token', jwtToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        });
+
+        return res.json({
+            success: true,
+            message: 'Google login successful',
+            user: {
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                isAccountVerified: user.isAccountVerified,
+                avatar: user.avatar
+            }
+        });
+
+    } catch (error) {
+        console.error('Google login error:', error);
+        return res.json({ success: false, message: 'Google login failed' });
+    }
+};

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { AppContext } from '../context/AppContext'
 import axios from 'axios'
 import { toast } from 'react-hot-toast'
+import GoogleLoginButton from '../components/GoogleLoginButton'
 import '../styles/auth.css'
 
 const Login = () => {
@@ -16,7 +17,7 @@ const Login = () => {
     const [name, setName] = useState('')
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
-    const [role] = useState('Patient')
+    const [role, setRole] = useState('Patient')
     const [showPassword, setShowPassword] = useState(false)
 
     const onSubmitHandler = async (e) => {
@@ -83,16 +84,26 @@ const Login = () => {
                     {state === 'Sign Up' ? 'Create your account' : 'Login to your account!'}
                 </p>
 
+                {/* Google Login Button */}
+                <GoogleLoginButton />
+
+                {/* Divider */}
+                <div className="auth-divider">
+                    <span>or</span>
+                </div>
+
                 <form onSubmit={onSubmitHandler}>
                     {state === 'Sign Up' && (
-                        <div className='input-group'>
-                            <img src={assets.person_icon} />
-                            <input 
-                            onChange={e => setName(e.target.value)}
-                            value={name}
-                            className='input-field' 
-                            type="text" placeholder="Full Name" required />
-                        </div>
+                        <>
+                            <div className='input-group'>
+                                <img src={assets.person_icon} />
+                                <input 
+                                onChange={e => setName(e.target.value)}
+                                value={name}
+                                className='input-field' 
+                                type="text" placeholder="Full Name" required />
+                            </div>
+                        </>
                     )}
 
                     <div className='input-group'>

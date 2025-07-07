@@ -1,5 +1,6 @@
 import React, { useContext } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { GoogleOAuthProvider } from '@react-oauth/google'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import EmailVerify from './pages/EmailVerify'
@@ -56,99 +57,101 @@ const ProtectedRoute = ({ children }) => {
 
 const App = () => {
   return (
-    <div>
-      {/* react-hot-toast container */}
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          duration: 3000,
-          style: {
-            background: '#333',
-            color: '#fff',
-          },
-        }}
-      />
-      
-      <Routes>
-        {/* Public routes */}
-        <Route path='/' element={<Home/>}/>
-        <Route path='/login' element={<Login/>}/>
-        <Route path='/email-verify' element={<EmailVerify/>}/>
-        <Route path='/reset-password' element={<ResetPassword/>}/>
+    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+      <div>
+        {/* react-hot-toast container */}
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 3000,
+            style: {
+              background: '#333',
+              color: '#fff',
+            },
+          }}
+        />
         
-        {/* Protected Routes */}
-        <Route path='/admin' element={
-          <ProtectedRoute>
-            <AdminLayout/>
-          </ProtectedRoute>
-        }>
-          <Route index element={<AdminDashboard/>}/>
-          <Route path='users' element={
+        <Routes>
+          {/* Public routes */}
+          <Route path='/' element={<Home/>}/>
+          <Route path='/login' element={<Login/>}/>
+          <Route path='/email-verify' element={<EmailVerify/>}/>
+          <Route path='/reset-password' element={<ResetPassword/>}/>
+          
+          {/* Protected Routes */}
+          <Route path='/admin' element={
             <ProtectedRoute>
-              <UserListPage />
+              <AdminLayout/>
             </ProtectedRoute>
-          } />
-          <Route path='user-profile/:userId' element={
-            <ProtectedRoute>
-              <UserProfilePage />
-            </ProtectedRoute>
-          } />
-          <Route path='doctors' element={
-            <ProtectedRoute>
-              <DoctorManagement />
-            </ProtectedRoute>
-          } />
-          <Route path='appointments' element={
-            <ProtectedRoute>
-              <Appointments />
-            </ProtectedRoute>
-          } />
-          <Route path='all-appointments' element={
-            <ProtectedRoute>
-              <AdminAppointments />
-            </ProtectedRoute>
-          } />
-        </Route>
+          }>
+            <Route index element={<AdminDashboard/>}/>
+            <Route path='users' element={
+              <ProtectedRoute>
+                <UserListPage />
+              </ProtectedRoute>
+            } />
+            <Route path='user-profile/:userId' element={
+              <ProtectedRoute>
+                <UserProfilePage />
+              </ProtectedRoute>
+            } />
+            <Route path='doctors' element={
+              <ProtectedRoute>
+                <DoctorManagement />
+              </ProtectedRoute>
+            } />
+            <Route path='appointments' element={
+              <ProtectedRoute>
+                <Appointments />
+              </ProtectedRoute>
+            } />
+            <Route path='all-appointments' element={
+              <ProtectedRoute>
+                <AdminAppointments />
+              </ProtectedRoute>
+            } />
+          </Route>
 
-        <Route path='/profile' element={
-          <ProtectedRoute>
-            <Profile />
-          </ProtectedRoute>
-        }/>
+          <Route path='/profile' element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }/>
 
-        <Route path='/doctor' element={
-          <ProtectedRoute>
-            <DoctorLayout/>
-          </ProtectedRoute>
-        }>
-          <Route index element={<Navigate to="/doctor/dashboard" replace />} />
-          <Route path='dashboard' element={<DoctorDashboard />} />
-          <Route path='patients' element={<PatientList />} />
-          <Route path='patient/:patientId' element={<PatientProfile />} />
-          <Route path='appointments' element={<DoctorAppointments />} />
-          <Route path='appointment-history' element={<DoctorAppointmentHistory />} />
-          <Route path='slots' element={<ManageSlots />} />
-        </Route>
+          <Route path='/doctor' element={
+            <ProtectedRoute>
+              <DoctorLayout/>
+            </ProtectedRoute>
+          }>
+            <Route index element={<Navigate to="/doctor/dashboard" replace />} />
+            <Route path='dashboard' element={<DoctorDashboard />} />
+            <Route path='patients' element={<PatientList />} />
+            <Route path='patient/:patientId' element={<PatientProfile />} />
+            <Route path='appointments' element={<DoctorAppointments />} />
+            <Route path='appointment-history' element={<DoctorAppointmentHistory />} />
+            <Route path='slots' element={<ManageSlots />} />
+          </Route>
 
-        <Route path='/patient' element={
-          <ProtectedRoute>
-            <PatientLayout/>
-          </ProtectedRoute>
-        }>
-          <Route index element={<Navigate to="/patient/dashboard" replace />} />
-          <Route path='dashboard' element={<PatientDashboard />} />
-          <Route path='doctors' element={<DoctorList />} />
-          <Route path='doctor/:doctorId' element={<DoctorProfile />} />
-          <Route path='doctor/:doctorId/rate' element={<DoctorRatingForm />} />
-          <Route path='book-appointment/:doctorId' element={<BookAppointment />} />
-          <Route path='appointments' element={<PatientAppointments />} />
-          <Route path='appointment-history' element={<AppointmentHistoryPage />} />
-        </Route>
+          <Route path='/patient' element={
+            <ProtectedRoute>
+              <PatientLayout/>
+            </ProtectedRoute>
+          }>
+            <Route index element={<Navigate to="/patient/dashboard" replace />} />
+            <Route path='dashboard' element={<PatientDashboard />} />
+            <Route path='doctors' element={<DoctorList />} />
+            <Route path='doctor/:doctorId' element={<DoctorProfile />} />
+            <Route path='doctor/:doctorId/rate' element={<DoctorRatingForm />} />
+            <Route path='book-appointment/:doctorId' element={<BookAppointment />} />
+            <Route path='appointments' element={<PatientAppointments />} />
+            <Route path='appointment-history' element={<AppointmentHistoryPage />} />
+          </Route>
 
-        {/* Catch all route */}
-        <Route path='*' element={<NotFound />} />
-      </Routes>
-    </div>
+          {/* Catch all route */}
+          <Route path='*' element={<NotFound />} />
+        </Routes>
+      </div>
+    </GoogleOAuthProvider>
   )
 }
 
