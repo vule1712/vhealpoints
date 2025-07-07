@@ -3,18 +3,26 @@ import userModel from '../models/userModel.js';
 
 const userAuth = async (req, res, next) => {
     const {token} = req.cookies;
+    
+    console.log('userAuth middleware - cookies:', req.cookies);
+    console.log('userAuth middleware - token:', token);
 
     if (!token) {
+        console.log('userAuth middleware - No token found');
         return res.json({success: false, message: 'Unauthorized. Please login again'});
     }
 
     try {
         const tokenDecode = jwt.verify(token, process.env.JWT_SECRET);
+        console.log('userAuth middleware - tokenDecode:', tokenDecode);
 
         if(tokenDecode.id) {
             // Get user data to check verification status
             const user = await userModel.findById(tokenDecode.id);
+            console.log('userAuth middleware - user found:', user ? 'yes' : 'no');
+            
             if (!user) {
+                console.log('userAuth middleware - User not found in database');
                 return res.json({success: false, message: 'User not found'});
             }
             
@@ -24,12 +32,15 @@ const userAuth = async (req, res, next) => {
                 isVerified: user.isAccountVerified,
                 role: user.role
             };
+            console.log('userAuth middleware - req.user set:', req.user);
         } else {
+            console.log('userAuth middleware - No id in token');
             return res.json({success: false, message: 'Unauthorized. Please login again'});
         }
         next();
 
     } catch (error) {
+        console.log('userAuth middleware - Error:', error.message);
         return res.json({success: false, message: error.message});
     }
 }

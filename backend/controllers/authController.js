@@ -72,11 +72,21 @@ export const login = async (req, res) => {
 
         // Generate JWT token
         const token = jwt.sign({id: user._id}, process.env.JWT_SECRET, {expiresIn:'7d'});
+        console.log('Login - Generated token:', token);
+        console.log('Login - NODE_ENV:', process.env.NODE_ENV);
+        
         res.cookie('token', token, {
             httpOnly: true, 
             secure: process.env.NODE_ENV === 'production', 
             sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
             maxAge: 7 * 24 * 60 * 60 * 1000 // 7 day
+        });
+        
+        console.log('Login - Cookie set with options:', {
+            httpOnly: true, 
+            secure: process.env.NODE_ENV === 'production', 
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000
         });
 
         return res.json({
@@ -185,14 +195,30 @@ export const verifyEmail = async (req, res) => {
 // Check if user is authenticated
 export const isAuthenticated = async (req, res) => {
     try {
+        console.log('isAuthenticated - req.user:', req.user);
         const {userId} = req.user;
+        console.log('isAuthenticated - userId:', userId);
         
         // Get user data to return verification status
         const user = await userModel.findById(userId).select('-password -verifyOtp -verifyOtpExpireAt -resetOtp -resetOtpExpireAt');
+        console.log('isAuthenticated - user found:', user ? 'yes' : 'no');
         
         if (!user) {
+            console.log('isAuthenticated - User not found in database');
             return res.json({success: false, message: 'User not found'});
         }
+        
+        console.log('isAuthenticated - Returning user data:', {
+            success: true,
+            message: 'User is authenticated',
+            userData: {
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                isAccountVerified: user.isAccountVerified
+            }
+        });
         
         return res.json({
             success: true, 
@@ -200,6 +226,7 @@ export const isAuthenticated = async (req, res) => {
             userData: user
         });
     } catch (error) {
+        console.log('isAuthenticated - Error:', error.message);
         return res.json({success: false, message: error.message});
         
     }

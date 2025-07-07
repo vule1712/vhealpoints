@@ -52,7 +52,7 @@ const NavBar = () => {
                     {userData.name[0].toUpperCase()}
                     <div className='user-menu'>
                         <ul className='menu-list'>
-                            {!userData.isAccountVerified && 
+                            {userData && !userData.isAccountVerified && 
                             <li onClick={sendVerificationOtp}
                             className='menu-item'>
                                 Verify Email
