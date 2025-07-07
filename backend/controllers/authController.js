@@ -44,7 +44,17 @@ export const register = async (req, res) => {
         // Send welcome email
         await sendWelcomeEmail(email, name);
 
-        res.json({success: true, message: 'Registration successful'});
+        res.json({
+            success: true, 
+            message: 'Registration successful',
+            token: token, // Return token in response body for localStorage
+            user: {
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                isAccountVerified: user.isAccountVerified
+            }
+        });
         
     } catch (error) {
         res.json({success: false, message: error.message});
@@ -86,15 +96,15 @@ export const login = async (req, res) => {
         
         console.log('Login - Cookie set with options:', {
             httpOnly: true, 
-            secure: true,
-            sameSite: 'none',
-            maxAge: 7 * 24 * 60 * 60 * 1000,
-            domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : undefined
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000
         });
 
         return res.json({
             success: true, 
             message: 'Login successful',
+            token: token, // Return token in response body for localStorage
             user: {
                 name: user.name,
                 email: user.email,
@@ -200,6 +210,13 @@ export const verifyEmail = async (req, res) => {
 export const isAuthenticated = async (req, res) => {
     try {
         console.log('isAuthenticated - req.user:', req.user);
+        
+        // Check if user data exists in request (set by middleware)
+        if (!req.user || !req.user.userId) {
+            console.log('isAuthenticated - No user data in request');
+            return res.json({success: false, message: 'Not authenticated'});
+        }
+        
         const {userId} = req.user;
         console.log('isAuthenticated - userId:', userId);
         
@@ -377,6 +394,7 @@ export const googleLogin = async (req, res) => {
         return res.json({
             success: true,
             message: 'Google login successful',
+            token: jwtToken, // Return token in response body for localStorage
             user: {
                 name: user.name,
                 email: user.email,

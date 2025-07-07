@@ -2,9 +2,19 @@ import jwt from 'jsonwebtoken';
 import userModel from '../models/userModel.js';
 
 const userAuth = async (req, res, next) => {
-    const {token} = req.cookies;
+    // Try to get token from cookies first, then from Authorization header
+    let token = req.cookies.token;
+    
+    if (!token) {
+        // Try Authorization header
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            token = authHeader.substring(7);
+        }
+    }
 
     console.log('userAuth middleware - cookies:', req.cookies);
+    console.log('userAuth middleware - auth header:', req.headers.authorization);
     console.log('userAuth middleware - token:', token);
 
     if (!token) {
@@ -46,7 +56,16 @@ const userAuth = async (req, res, next) => {
 }
 
 const adminAuth = async (req, res, next) => {
-    const {token} = req.cookies;
+    // Try to get token from cookies first, then from Authorization header
+    let token = req.cookies.token;
+    
+    if (!token) {
+        // Try Authorization header
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            token = authHeader.substring(7);
+        }
+    }
 
     if (!token) {
         return res.json({success: false, message: 'Unauthorized. Please login again'});

@@ -14,17 +14,28 @@ export const AppContextProvider = (props) => {
     const [isLoading, setIsLoading] = useState(true)
     const [useLocalStorage, setUseLocalStorage] = useState(false) // Fallback for cookie issues
 
+    // Set auth token for axios requests
+    const setAuthToken = (token) => {
+        if (token) {
+            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        } else {
+            delete axios.defaults.headers.common['Authorization'];
+        }
+    };
+
     // Check if the user is logged in and fetch user data
     const getAuthState = async() => {
         try {
             console.log('AppContext: Checking auth state...');
             console.log('AppContext: Backend URL:', backendUrl);
             
+            // First try cookie-based authentication
             const {data} = await axios.get(backendUrl + '/api/auth/is-auth')
             console.log('AppContext: Auth response:', data);
             
             if(data.success) {
                 setIsLoggedIn(true)
+                setUseLocalStorage(false)
                 // Set user data directly from the response
                 if (data.userData) {
                     console.log('AppContext: Setting user data from auth response');
@@ -35,12 +46,18 @@ export const AppContextProvider = (props) => {
                     await getUserData()
                 }
             } else {
-                console.log('AppContext: Auth failed:', data.message);
-                setIsLoggedIn(false)
-                setUserData(null)
+                console.log('AppContext: Cookie auth failed, trying localStorage');
+                // Try localStorage fallback
+                if (checkLocalStorageAuth()) {
+                    console.log('AppContext: localStorage auth successful');
+                } else {
+                    console.log('AppContext: All auth methods failed');
+                    setIsLoggedIn(false)
+                    setUserData(null)
+                }
             }
         } catch (error) {
-            console.error('AppContext: Auth check failed:', error);
+            console.error('AppContext: Cookie auth check failed:', error);
             console.error('AppContext: Error response:', error.response?.data);
             
             // Try localStorage fallback if cookie auth fails
@@ -88,6 +105,9 @@ export const AppContextProvider = (props) => {
             // Clear localStorage
             localStorage.removeItem('vhealpoints_token');
             localStorage.removeItem('vhealpoints_user');
+            
+            // Clear axios auth header
+            setAuthToken(null);
             
             toast.success('Logged out successfully')
         } catch (error) {
@@ -166,12 +186,27 @@ export const AppContextProvider = (props) => {
                 setUseLocalStorage(true);
                 setIsLoggedIn(true);
                 setUserData(JSON.parse(userData));
+                
+                // Set token for axios requests
+                setAuthToken(token);
+                
                 return true;
             }
         } catch (error) {
             console.error('AppContext: Error reading from localStorage:', error);
         }
         return false;
+    };
+
+    // Function to save auth data to localStorage
+    const saveAuthToLocalStorage = (token, user) => {
+        try {
+            localStorage.setItem('vhealpoints_token', token);
+            localStorage.setItem('vhealpoints_user', JSON.stringify(user));
+            console.log('AppContext: Auth data saved to localStorage');
+        } catch (error) {
+            console.error('AppContext: Error saving to localStorage:', error);
+        }
     };
 
     const value = {
@@ -185,7 +220,9 @@ export const AppContextProvider = (props) => {
         isLoading,
         socket,
         useLocalStorage,
-        setUseLocalStorage
+        setUseLocalStorage,
+        saveAuthToLocalStorage,
+        setAuthToken
     }
 
     return(

@@ -11,7 +11,7 @@ const Login = () => {
 
     const navigate = useNavigate()
 
-    const {backendUrl, setIsLoggedIn, getUserData} = useContext(AppContext)
+    const {backendUrl, setIsLoggedIn, getUserData, saveAuthToLocalStorage} = useContext(AppContext)
 
     const [state, setState] = useState('Sign Up')
     const [name, setName] = useState('')
@@ -36,6 +36,12 @@ const Login = () => {
 
                 if(data.success) {
                     setIsLoggedIn(true)
+                    
+                    // Save token and user data to localStorage
+                    if (data.token && data.user) {
+                        saveAuthToLocalStorage(data.token, data.user);
+                    }
+                    
                     const userData = await getUserData()
                     console.log('Signup - User data received:', userData)
                     
@@ -43,14 +49,6 @@ const Login = () => {
                     if (!userData) {
                         toast.error('Failed to get user data')
                         return
-                    }
-                    
-                    // Store in localStorage as backup
-                    try {
-                        localStorage.setItem('vhealpoints_user', JSON.stringify(userData));
-                        console.log('Signup: Stored user data in localStorage');
-                    } catch (error) {
-                        console.error('Signup: Failed to store in localStorage:', error);
                     }
                     
                     // Redirect to email verification if not verified
@@ -67,6 +65,12 @@ const Login = () => {
 
                 if(data.success) {
                     setIsLoggedIn(true)
+                    
+                    // Save token and user data to localStorage
+                    if (data.token && data.user) {
+                        saveAuthToLocalStorage(data.token, data.user);
+                    }
+                    
                     const userData = await getUserData()
                     console.log('Login - User data received:', userData)
                     
@@ -74,14 +78,6 @@ const Login = () => {
                     if (!userData) {
                         toast.error('Failed to get user data')
                         return
-                    }
-                    
-                    // Store in localStorage as backup
-                    try {
-                        localStorage.setItem('vhealpoints_user', JSON.stringify(userData));
-                        console.log('Login: Stored user data in localStorage');
-                    } catch (error) {
-                        console.error('Login: Failed to store in localStorage:', error);
                     }
                     
                     // Redirect to email verification if not verified

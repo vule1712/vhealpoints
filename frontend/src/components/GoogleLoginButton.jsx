@@ -7,7 +7,7 @@ import { AppContext } from '../context/AppContext';
 
 const GoogleLoginButton = () => {
     const navigate = useNavigate();
-    const { backendUrl, setIsLoggedIn, getUserData } = useContext(AppContext);
+    const { backendUrl, setIsLoggedIn, getUserData, saveAuthToLocalStorage } = useContext(AppContext);
 
     const login = useGoogleLogin({
         onSuccess: async (tokenResponse) => {
@@ -20,6 +20,12 @@ const GoogleLoginButton = () => {
 
                 if (data.success) {
                     setIsLoggedIn(true);
+                    
+                    // Save token and user data to localStorage
+                    if (data.token && data.user) {
+                        saveAuthToLocalStorage(data.token, data.user);
+                    }
+                    
                     const userData = await getUserData();
                     console.log('Google Login - User data received:', userData);
                     
@@ -27,14 +33,6 @@ const GoogleLoginButton = () => {
                     if (!userData) {
                         toast.error('Failed to get user data');
                         return;
-                    }
-                    
-                    // Store in localStorage as backup
-                    try {
-                        localStorage.setItem('vhealpoints_user', JSON.stringify(userData));
-                        console.log('Google Login: Stored user data in localStorage');
-                    } catch (error) {
-                        console.error('Google Login: Failed to store in localStorage:', error);
                     }
                     
                     // Check verification status and redirect accordingly
