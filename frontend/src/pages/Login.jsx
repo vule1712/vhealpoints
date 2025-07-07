@@ -45,6 +45,14 @@ const Login = () => {
                         return
                     }
                     
+                    // Store in localStorage as backup
+                    try {
+                        localStorage.setItem('vhealpoints_user', JSON.stringify(userData));
+                        console.log('Signup: Stored user data in localStorage');
+                    } catch (error) {
+                        console.error('Signup: Failed to store in localStorage:', error);
+                    }
+                    
                     // Redirect to email verification if not verified
                     if (!userData.isAccountVerified) {
                         navigate('/email-verify')
@@ -66,6 +74,14 @@ const Login = () => {
                     if (!userData) {
                         toast.error('Failed to get user data')
                         return
+                    }
+                    
+                    // Store in localStorage as backup
+                    try {
+                        localStorage.setItem('vhealpoints_user', JSON.stringify(userData));
+                        console.log('Login: Stored user data in localStorage');
+                    } catch (error) {
+                        console.error('Login: Failed to store in localStorage:', error);
                     }
                     
                     // Redirect to email verification if not verified

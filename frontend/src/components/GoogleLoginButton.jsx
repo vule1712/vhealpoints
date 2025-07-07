@@ -29,6 +29,14 @@ const GoogleLoginButton = () => {
                         return;
                     }
                     
+                    // Store in localStorage as backup
+                    try {
+                        localStorage.setItem('vhealpoints_user', JSON.stringify(userData));
+                        console.log('Google Login: Stored user data in localStorage');
+                    } catch (error) {
+                        console.error('Google Login: Failed to store in localStorage:', error);
+                    }
+                    
                     // Check verification status and redirect accordingly
                     if (!userData.isAccountVerified) {
                         navigate('/email-verify');
