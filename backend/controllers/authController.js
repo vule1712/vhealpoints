@@ -263,16 +263,38 @@ export const resetPassword = async (req, res) => {
 // Google OAuth Login
 export const googleLogin = async (req, res) => {
     try {
-        const { token } = req.body;
+        const { code } = req.body;
 
-        if (!token) {
-            return res.json({ success: false, message: 'Google token is required' });
+        if (!code) {
+            return res.json({ success: false, message: 'Authorization code is required' });
         }
 
-        // Get user info from Google using access token
+        // Exchange code for tokens
+        const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                code,
+                client_id: process.env.GOOGLE_CLIENT_ID,
+                client_secret: process.env.GOOGLE_CLIENT_SECRET,
+                redirect_uri: 'https://vhealpoints.vercel.app', // Main domain
+                grant_type: 'authorization_code',
+            }),
+        });
+
+        if (!tokenResponse.ok) {
+            console.error('Token exchange failed:', await tokenResponse.text());
+            return res.json({ success: false, message: 'Failed to exchange code for tokens' });
+        }
+
+        const tokens = await tokenResponse.json();
+
+        // Get user info using access token
         const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
             headers: {
-                'Authorization': `Bearer ${token}`
+                'Authorization': `Bearer ${tokens.access_token}`
             }
         });
 

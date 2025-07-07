@@ -10,12 +10,14 @@ const GoogleLoginButton = () => {
     const { backendUrl, setIsLoggedIn, getUserData } = useContext(AppContext);
 
     const login = useGoogleLogin({
-        onSuccess: async (tokenResponse) => {
+        flow: 'auth-code',
+        redirect_uri: window.location.origin,
+        onSuccess: async (codeResponse) => {
             try {
                 axios.defaults.withCredentials = true;
 
                 const { data } = await axios.post(backendUrl + '/api/auth/google-login', {
-                    token: tokenResponse.access_token
+                    code: codeResponse.code
                 });
 
                 if (data.success) {
