@@ -206,6 +206,75 @@ export const verifyEmail = async (req, res) => {
         }
 }
 
+// Check if user is authenticated (without middleware)
+export const checkAuthStatus = async (req, res) => {
+    try {
+        console.log('checkAuthStatus - cookies:', req.cookies);
+        console.log('checkAuthStatus - auth header:', req.headers.authorization);
+        
+        // Try to get token from cookies first, then from Authorization header
+        let token = req.cookies.token;
+        
+        if (!token) {
+            // Try Authorization header
+            const authHeader = req.headers.authorization;
+            if (authHeader && authHeader.startsWith('Bearer ')) {
+                token = authHeader.substring(7);
+            }
+        }
+        
+        console.log('checkAuthStatus - token:', token);
+
+        if (!token) {
+            console.log('checkAuthStatus - No token found');
+            return res.json({success: false, message: 'Not authenticated'});
+        }
+
+        try {
+            const tokenDecode = jwt.verify(token, process.env.JWT_SECRET);
+            console.log('checkAuthStatus - tokenDecode:', tokenDecode);
+
+            if(tokenDecode.id) {
+                // Get user data to return verification status
+                const user = await userModel.findById(tokenDecode.id).select('-password -verifyOtp -verifyOtpExpireAt -resetOtp -resetOtpExpireAt');
+                console.log('checkAuthStatus - user found:', user ? 'yes' : 'no');
+                
+                if (!user) {
+                    console.log('checkAuthStatus - User not found in database');
+                    return res.json({success: false, message: 'User not found'});
+                }
+                
+                console.log('checkAuthStatus - Returning user data:', {
+                    success: true,
+                    message: 'User is authenticated',
+                    userData: {
+                        _id: user._id,
+                        name: user.name,
+                        email: user.email,
+                        role: user.role,
+                        isAccountVerified: user.isAccountVerified
+                    }
+                });
+                
+                return res.json({
+                    success: true, 
+                    message: 'User is authenticated',
+                    userData: user
+                });
+            } else {
+                console.log('checkAuthStatus - No id in token');
+                return res.json({success: false, message: 'Invalid token'});
+            }
+        } catch (jwtError) {
+            console.log('checkAuthStatus - JWT verification failed:', jwtError.message);
+            return res.json({success: false, message: 'Invalid token'});
+        }
+    } catch (error) {
+        console.log('checkAuthStatus - Error:', error.message);
+        return res.json({success: false, message: error.message});
+    }
+}
+
 // Check if user is authenticated
 export const isAuthenticated = async (req, res) => {
     try {

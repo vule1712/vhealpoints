@@ -7,7 +7,7 @@ import { AppContext } from '../context/AppContext';
 
 const GoogleLoginButton = () => {
     const navigate = useNavigate();
-    const { backendUrl, setIsLoggedIn, getUserData, saveAuthToLocalStorage } = useContext(AppContext);
+    const { backendUrl, setIsLoggedIn, getUserData, authenticateWithToken } = useContext(AppContext);
 
     const login = useGoogleLogin({
         onSuccess: async (tokenResponse) => {
@@ -19,11 +19,9 @@ const GoogleLoginButton = () => {
                 });
 
                 if (data.success) {
-                    setIsLoggedIn(true);
-                    
-                    // Save token and user data to localStorage
+                    // Authenticate immediately with token
                     if (data.token && data.user) {
-                        saveAuthToLocalStorage(data.token, data.user);
+                        await authenticateWithToken(data.token, data.user);
                     }
                     
                     const userData = await getUserData();

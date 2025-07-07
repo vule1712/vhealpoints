@@ -69,6 +69,32 @@ export const AppContextProvider = (props) => {
             setIsLoading(false)
         }
     }
+
+    // Authenticate user immediately after login with token
+    const authenticateWithToken = async (token, userData) => {
+        try {
+            console.log('AppContext: Authenticating with token...');
+            console.log('AppContext: Token:', token);
+            console.log('AppContext: User data:', userData);
+            
+            // Save to localStorage first
+            saveAuthToLocalStorage(token, userData);
+            
+            // Set token for axios requests
+            setAuthToken(token);
+            
+            // Set login state
+            setIsLoggedIn(true);
+            setUseLocalStorage(true);
+            setUserData(userData);
+            
+            console.log('AppContext: Authentication successful with token');
+            return true;
+        } catch (error) {
+            console.error('AppContext: Error authenticating with token:', error);
+            return false;
+        }
+    };
     
     // Fetch user data
     const getUserData = async() => {
@@ -181,6 +207,10 @@ export const AppContextProvider = (props) => {
             const token = localStorage.getItem('vhealpoints_token');
             const userData = localStorage.getItem('vhealpoints_user');
             
+            console.log('AppContext: Checking localStorage for auth data...');
+            console.log('AppContext: Token in localStorage:', token ? 'found' : 'not found');
+            console.log('AppContext: User data in localStorage:', userData ? 'found' : 'not found');
+            
             if (token && userData) {
                 console.log('AppContext: Found auth data in localStorage');
                 setUseLocalStorage(true);
@@ -191,6 +221,8 @@ export const AppContextProvider = (props) => {
                 setAuthToken(token);
                 
                 return true;
+            } else {
+                console.log('AppContext: No auth data found in localStorage');
             }
         } catch (error) {
             console.error('AppContext: Error reading from localStorage:', error);
@@ -222,7 +254,8 @@ export const AppContextProvider = (props) => {
         useLocalStorage,
         setUseLocalStorage,
         saveAuthToLocalStorage,
-        setAuthToken
+        setAuthToken,
+        authenticateWithToken
     }
 
     return(
