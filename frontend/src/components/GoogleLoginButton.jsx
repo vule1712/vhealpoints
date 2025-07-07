@@ -9,9 +9,23 @@ const GoogleLoginButton = () => {
     const navigate = useNavigate();
     const { backendUrl, setIsLoggedIn, getUserData } = useContext(AppContext);
 
+    // Determine the correct redirect URI based on environment
+    const getRedirectUri = () => {
+        const currentOrigin = window.location.origin;
+        console.log('Current origin:', currentOrigin);
+        
+        // For production, use the main domain
+        if (currentOrigin.includes('vercel.app')) {
+            return 'https://vhealpoints.vercel.app';
+        }
+        
+        // For local development
+        return 'http://localhost:5173';
+    };
+
     const login = useGoogleLogin({
         flow: 'auth-code',
-        redirect_uri: window.location.origin,
+        redirect_uri: getRedirectUri(),
         onSuccess: async (codeResponse) => {
             try {
                 axios.defaults.withCredentials = true;
@@ -35,7 +49,8 @@ const GoogleLoginButton = () => {
                 toast.error('Google login failed. Please try again.');
             }
         },
-        onError: () => {
+        onError: (error) => {
+            console.error('Google OAuth error:', error);
             toast.error('Google login failed. Please try again.');
         }
     });
@@ -43,7 +58,10 @@ const GoogleLoginButton = () => {
     return (
         <div className="google-login-container">
             <button 
-                onClick={() => login()}
+                onClick={() => {
+                    console.log('Using redirect URI:', getRedirectUri());
+                    login();
+                }}
                 className="custom-google-button"
                 type="button"
             >
