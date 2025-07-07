@@ -16,23 +16,32 @@ export const AppContextProvider = (props) => {
     // Check if the user is logged in and fetch user data
     const getAuthState = async() => {
         try {
+            console.log('AppContext: Checking auth state...');
+            console.log('AppContext: Backend URL:', backendUrl);
+            console.log('AppContext: withCredentials:', axios.defaults.withCredentials);
+            
             const {data} = await axios.get(backendUrl + '/api/auth/is-auth')
+            console.log('AppContext: Auth response:', data);
             
             if(data.success) {
                 setIsLoggedIn(true)
                 // Set user data directly from the response
                 if (data.userData) {
+                    console.log('AppContext: Setting user data from auth response');
                     setUserData(data.userData)
                 } else {
                     // Fallback to separate call if userData not in response
-                await getUserData()
+                    console.log('AppContext: Falling back to getUserData');
+                    await getUserData()
                 }
             } else {
+                console.log('AppContext: Auth failed, setting logged out state');
                 setIsLoggedIn(false)
                 setUserData(null)
             }
         } catch (error) {
-            console.error('Auth check failed:', error)
+            console.error('AppContext: Auth check failed:', error)
+            console.error('AppContext: Error response:', error.response?.data)
             setIsLoggedIn(false)
             setUserData(null)
         } finally {
