@@ -12,55 +12,40 @@ const GoogleLoginButton = () => {
     const login = useGoogleLogin({
         onSuccess: async (tokenResponse) => {
             try {
-                console.log('Google OAuth success, token received');
                 axios.defaults.withCredentials = true;
 
-                console.log('Making request to backend...');
                 const { data } = await axios.post(backendUrl + '/api/auth/google-login', {
                     token: tokenResponse.access_token
                 });
-                console.log('Backend response:', data);
 
                 if (data.success) {
-                    console.log('Google login successful, setting login state');
                     setIsLoggedIn(true);
-                    
-                    console.log('Fetching user data...');
                     const userData = await getUserData();
                     console.log('Google Login - User data received:', userData);
                     
                     // Check if userData is null
                     if (!userData) {
-                        console.error('User data is null after Google login');
                         toast.error('Failed to get user data');
                         return;
                     }
                     
                     // Check verification status and redirect accordingly
                     if (!userData.isAccountVerified) {
-                        console.log('User not verified, redirecting to email verification');
                         navigate('/email-verify');
                     } else {
-                        console.log('User verified, redirecting to dashboard');
                         navigate('/');
                     }
                 } else {
-                    console.error('Backend returned error:', data.message);
                     toast.error(data.message);
                 }
             } catch (error) {
                 console.error('Google login error:', error);
-                console.error('Error response:', error.response);
-                console.error('Error message:', error.message);
                 toast.error('Google login failed. Please try again.');
             }
         },
-        onError: (error) => {
-            console.error('Google login error:', error);
+        onError: () => {
             toast.error('Google login failed. Please try again.');
-        },
-        flow: 'implicit',
-        ux_mode: 'popup'
+        }
     });
 
     return (

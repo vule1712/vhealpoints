@@ -44,7 +44,7 @@ const NavBar = () => {
 
     return (
         <div className='navbar'>
-                <img onClick={() => navigate('/')} src={assets.vHealPoints3_trans} alt="" className='navbar-logo' />
+                <img onClick={() => navigate('/')} src={assets.vHealPoints3} alt="" className='navbar-logo' />
             {userData ?
             <div className='flex items-center gap-4'>
                 <NotificationBell />
