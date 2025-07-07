@@ -38,6 +38,13 @@ const Login = () => {
                     setIsLoggedIn(true)
                     const userData = await getUserData()
                     console.log('Signup - User data received:', userData)
+                    
+                    // Check if userData is null
+                    if (!userData) {
+                        toast.error('Failed to get user data')
+                        return
+                    }
+                    
                     // Redirect to email verification if not verified
                     if (!userData.isAccountVerified) {
                         navigate('/email-verify')
@@ -54,6 +61,13 @@ const Login = () => {
                     setIsLoggedIn(true)
                     const userData = await getUserData()
                     console.log('Login - User data received:', userData)
+                    
+                    // Check if userData is null
+                    if (!userData) {
+                        toast.error('Failed to get user data')
+                        return
+                    }
+                    
                     // Redirect to email verification if not verified
                     if (!userData.isAccountVerified) {
                         navigate('/email-verify')

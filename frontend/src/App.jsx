@@ -48,7 +48,11 @@ const ProtectedRoute = ({ children }) => {
         return <Navigate to="/login" />;
     }
 
-    if (!userData?.isAccountVerified) {
+    if (!userData) {
+        return <Navigate to="/login" />;
+    }
+    
+    if (!userData.isAccountVerified) {
         return <Navigate to="/email-verify" />;
     }
 
