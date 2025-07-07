@@ -35,11 +35,10 @@ export const register = async (req, res) => {
         const token = jwt.sign({id: user._id}, process.env.JWT_SECRET, {expiresIn:'7d'});
         res.cookie('token', token, {
             httpOnly: true, 
-            secure: true, // Always secure for HTTPS
-            sameSite: 'none', // Allow cross-origin
+            secure: process.env.NODE_ENV === 'production', // Only secure in production
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Use 'lax' for development
             maxAge: 7 * 24 * 60 * 60 * 1000, // 7 day
-            path: '/',
-            domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : undefined
+            path: '/'
         });
 
         // Send welcome email
@@ -79,11 +78,10 @@ export const login = async (req, res) => {
         
         res.cookie('token', token, {
             httpOnly: true, 
-            secure: true, // Always secure for HTTPS
-            sameSite: 'none', // Allow cross-origin
+            secure: process.env.NODE_ENV === 'production', // Only secure in production
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Use 'lax' for development
             maxAge: 7 * 24 * 60 * 60 * 1000, // 7 day
-            path: '/',
-            domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : undefined
+            path: '/'
         });
         
         console.log('Login - Cookie set with options:', {
@@ -114,8 +112,8 @@ export const logout = async (req, res) => {
     try {
         res.clearCookie('token', {
             httpOnly: true, 
-            secure: true, // Always secure for HTTPS
-            sameSite: 'none', // Allow cross-origin
+            secure: process.env.NODE_ENV === 'production', // Only secure in production
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Use 'lax' for development
             path: '/',
             domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : undefined
         });
@@ -371,11 +369,10 @@ export const googleLogin = async (req, res) => {
         const jwtToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
         res.cookie('token', jwtToken, {
             httpOnly: true,
-            secure: true, // Always secure for HTTPS
-            sameSite: 'none', // Allow cross-origin
+            secure: process.env.NODE_ENV === 'production', // Only secure in production
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Use 'lax' for development
             maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-            path: '/',
-            domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : undefined
+            path: '/'
         });
 
         return res.json({
