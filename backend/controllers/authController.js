@@ -34,10 +34,10 @@ export const register = async (req, res) => {
         // Generate JWT token
         const token = jwt.sign({id: user._id}, process.env.JWT_SECRET, {expiresIn:'7d'});
         res.cookie('token', token, {
-            httpOnly: true, 
-            secure: process.env.NODE_ENV === 'production', // Only secure in production
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Use 'lax' for development
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 day
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
             path: '/'
         });
 
@@ -77,10 +77,10 @@ export const login = async (req, res) => {
         console.log('Login - NODE_ENV:', process.env.NODE_ENV);
         
         res.cookie('token', token, {
-            httpOnly: true, 
-            secure: process.env.NODE_ENV === 'production', // Only secure in production
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Use 'lax' for development
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 day
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
             path: '/'
         });
         
@@ -111,11 +111,10 @@ export const login = async (req, res) => {
 export const logout = async (req, res) => {
     try {
         res.clearCookie('token', {
-            httpOnly: true, 
-            secure: process.env.NODE_ENV === 'production', // Only secure in production
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Use 'lax' for development
-            path: '/',
-            domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : undefined
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            path: '/'
         });
 
         return res.json({success: true, message: 'Logout successful'});
@@ -369,9 +368,9 @@ export const googleLogin = async (req, res) => {
         const jwtToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
         res.cookie('token', jwtToken, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production', // Only secure in production
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Use 'lax' for development
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
             path: '/'
         });
 
