@@ -22,14 +22,31 @@ connectDB();
 
 const allowedOrigins = [
         'http://localhost:5173',
-        'https://vhealpoints.vercel.app',
-        'https://vhealpoints-d8n0s3npo-vulephuonganhs-projects.vercel.app'
+        'https://vhealpoints.vercel.app'
     ];
+
+// Add Vercel preview domains dynamically
+const vercelPreviewPattern = /^https:\/\/vhealpoints-.*-vulephuonganhs-projects\.vercel\.app$/;
 
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
-    origin: allowedOrigins, 
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        
+        // Allow localhost and main Vercel domain
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+        
+        // Allow Vercel preview domains
+        if (vercelPreviewPattern.test(origin)) {
+            return callback(null, true);
+        }
+        
+        callback(new Error('Not allowed by CORS'));
+    },
     credentials: true
 }));
 
