@@ -343,7 +343,7 @@ export const googleLogin = async (req, res) => {
                 user.googleId = googleId;
                 user.googleEmail = email;
                 user.avatar = picture;
-                user.isAccountVerified = true; // Google accounts are pre-verified
+                // Keep existing verification status - don't auto-verify
                 await user.save();
             } else {
                 // Create new user with Google OAuth - always as Patient
@@ -354,7 +354,7 @@ export const googleLogin = async (req, res) => {
                     googleEmail: email,
                     avatar: picture,
                     role: 'Patient', // Always create as Patient
-                    isAccountVerified: true // Google accounts are pre-verified
+                    isAccountVerified: false // Require manual verification
                 });
                 await user.save();
 
