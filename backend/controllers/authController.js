@@ -35,9 +35,10 @@ export const register = async (req, res) => {
         const token = jwt.sign({id: user._id}, process.env.JWT_SECRET, {expiresIn:'7d'});
         res.cookie('token', token, {
             httpOnly: true, 
-            secure: process.env.NODE_ENV === 'production', 
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 day
+            secure: true, // Always secure for HTTPS
+            sameSite: 'none', // Allow cross-origin
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 day
+            path: '/'
         });
 
         // Send welcome email
@@ -77,8 +78,8 @@ export const login = async (req, res) => {
         
         res.cookie('token', token, {
             httpOnly: true, 
-            secure: process.env.NODE_ENV === 'production', 
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            secure: true, // Always secure for HTTPS
+            sameSite: 'none', // Allow cross-origin
             maxAge: 7 * 24 * 60 * 60 * 1000, // 7 day
             path: '/'
         });
@@ -110,8 +111,9 @@ export const logout = async (req, res) => {
     try {
         res.clearCookie('token', {
             httpOnly: true, 
-            secure: process.env.NODE_ENV === 'production', 
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+            secure: true, // Always secure for HTTPS
+            sameSite: 'none', // Allow cross-origin
+            path: '/'
         });
 
         return res.json({success: true, message: 'Logout successful'});
@@ -365,9 +367,10 @@ export const googleLogin = async (req, res) => {
         const jwtToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
         res.cookie('token', jwtToken, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+            secure: true, // Always secure for HTTPS
+            sameSite: 'none', // Allow cross-origin
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+            path: '/'
         });
 
         return res.json({
