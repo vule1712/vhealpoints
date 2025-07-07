@@ -263,7 +263,7 @@ export const resetPassword = async (req, res) => {
 // Google OAuth Login
 export const googleLogin = async (req, res) => {
     try {
-        const { code } = req.body;
+        const { code, state } = req.body;
 
         if (!code) {
             return res.json({ success: false, message: 'Authorization code is required' });

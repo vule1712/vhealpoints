@@ -1,67 +1,81 @@
-import React, { useContext } from 'react';
-import { useGoogleLogin } from '@react-oauth/google';
-import { useNavigate } from 'react-router-dom';
+import React, { useContext, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { AppContext } from '../context/AppContext';
 
 const GoogleLoginButton = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { backendUrl, setIsLoggedIn, getUserData } = useContext(AppContext);
 
-    // Determine the correct redirect URI based on environment
-    const getRedirectUri = () => {
-        const currentOrigin = window.location.origin;
-        console.log('Current origin:', currentOrigin);
+    // Check for authorization code in URL (after redirect)
+    useEffect(() => {
+        const urlParams = new URLSearchParams(location.search);
+        const code = urlParams.get('code');
+        const state = urlParams.get('state');
         
-        // For production, use the main domain
-        if (currentOrigin.includes('vercel.app')) {
-            return 'https://vhealpoints.vercel.app';
+        if (code && state) {
+            console.log('Found authorization code in URL, processing...');
+            handleGoogleLogin(code);
+            
+            // Clean up URL
+            navigate(location.pathname, { replace: true });
         }
-        
-        // For local development
-        return 'http://localhost:5173';
-    };
+    }, [location]);
 
-    const login = useGoogleLogin({
-        flow: 'auth-code',
-        redirect_uri: getRedirectUri(),
-        onSuccess: async (codeResponse) => {
-            try {
-                axios.defaults.withCredentials = true;
+    const handleGoogleLogin = async (code) => {
+        try {
+            axios.defaults.withCredentials = true;
 
-                const { data } = await axios.post(backendUrl + '/api/auth/google-login', {
-                    code: codeResponse.code
-                });
+            const { data } = await axios.post(backendUrl + '/api/auth/google-login', {
+                code: code
+            });
 
-                if (data.success) {
-                    setIsLoggedIn(true);
-                    const userData = await getUserData();
-                    console.log('Google Login - User data received:', userData);
-                    
-                    // Google accounts are pre-verified, so redirect directly
-                    navigate('/');
-                } else {
-                    toast.error(data.message);
-                }
-            } catch (error) {
-                console.error('Google login error:', error);
-                toast.error('Google login failed. Please try again.');
+            if (data.success) {
+                setIsLoggedIn(true);
+                const userData = await getUserData();
+                console.log('Google Login - User data received:', userData);
+                
+                // Google accounts are pre-verified, so redirect directly
+                navigate('/');
+            } else {
+                toast.error(data.message);
             }
-        },
-        onError: (error) => {
-            console.error('Google OAuth error:', error);
+        } catch (error) {
+            console.error('Google login error:', error);
             toast.error('Google login failed. Please try again.');
         }
-    });
+    };
+
+    const startGoogleLogin = () => {
+        console.log('Starting Google OAuth flow...');
+        
+        // Generate a random state parameter for security
+        const state = Math.random().toString(36).substring(7);
+        
+        // Store state in sessionStorage for verification
+        sessionStorage.setItem('googleOAuthState', state);
+        
+        // Construct Google OAuth URL
+        const googleOAuthUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+        googleOAuthUrl.searchParams.set('client_id', import.meta.env.VITE_GOOGLE_CLIENT_ID);
+        googleOAuthUrl.searchParams.set('redirect_uri', 'https://vhealpoints.vercel.app');
+        googleOAuthUrl.searchParams.set('response_type', 'code');
+        googleOAuthUrl.searchParams.set('scope', 'openid email profile');
+        googleOAuthUrl.searchParams.set('state', state);
+        googleOAuthUrl.searchParams.set('access_type', 'offline');
+        
+        console.log('Redirecting to Google OAuth URL:', googleOAuthUrl.toString());
+        
+        // Redirect to Google
+        window.location.href = googleOAuthUrl.toString();
+    };
 
     return (
         <div className="google-login-container">
             <button 
-                onClick={() => {
-                    console.log('Using redirect URI:', getRedirectUri());
-                    login();
-                }}
+                onClick={startGoogleLogin}
                 className="custom-google-button"
                 type="button"
             >
