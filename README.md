@@ -8,6 +8,8 @@
 
 **vHealPoint** is a full-stack web application that revolutionizes healthcare management by providing a digital platform for connecting patients with healthcare providers. Our solution streamlines the appointment booking process and enhances patient-doctor communication.
 
+Check it out at: https://vhealpoints.vercel.app
+
 ---
 
 ## ✨ Key Features
@@ -19,18 +21,18 @@
 - [x] Email Verification System
 - [x] Password Recovery & Reset
 - [x] Role-Based Access Control (Admin, Doctor, Patient)
-- [ ] Google OAuth 2.0 Integration *(Coming Soon)*
+- [x] Google OAuth 2.0 Integration
 
 ### 👥 User Dashboards
-- [ ] **Admin Dashboard**  
+**Admin Dashboard**  
   - User Management & Analytics
   - System Configuration
   - Appointment Oversight
-- [ ] **Doctor Dashboard**  
+**Doctor Dashboard**  
   - Appointment Management
   - Patient Records
   - Schedule Management
-- [ ] **Patient Dashboard**  
+**Patient Dashboard**  
   - Appointment Booking
   - Medical History
   - Profile Management
@@ -61,65 +63,6 @@
 - RESTful API Architecture
 
 ---
-
-## 🚀 Getting Started
-
-### Prerequisites
-- Node.js (v18 or higher)
-- MongoDB
-- npm or yarn package manager
-- Git
-
-### Installation Steps
-
-1. **Clone the Repository**
-```bash
-git clone https://github.com/vule1712/vhealpoints.git
-cd vhealpoint
-```
-
-2. **Install Dependencies**
-```bash
-# Backend Setup
-cd backend
-npm install
-
-# Frontend Setup
-cd ../frontend
-npm install
-```
-
-3. **Environment Configuration**
-Create `.env` files in both frontend and backend directories:
-
-Backend `.env`:
-```env
-PORT=5000
-MONGO_URI=mongodb+srv://your-uri
-JWT_SECRET=your_jwt_secret
-EMAIL_USER=your_email@example.com
-EMAIL_PASS=your_email_password
-```
-
-Frontend `.env`:
-```env
-VITE_API_URL=http://localhost:5000
-```
-
-4. **Start the Application**
-```bash
-# Start Backend Server
-cd backend
-npm run dev
-
-# Start Frontend Development Server
-cd ../frontend
-npm run dev
-```
-
-## 📝 API Documentation
-*(Coming Soon)*
-
 ## 🤝 Contributing
 We welcome contributions! Please read our contributing guidelines before submitting pull requests.
 
