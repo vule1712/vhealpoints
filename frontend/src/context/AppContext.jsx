@@ -8,7 +8,7 @@ export const AppContext = createContext()
 export const AppContextProvider = (props) => {
     axios.defaults.withCredentials = true // Allow cookies to be sent with requests
 
-    const backendUrl = import.meta.env.VITE_BACKEND_URL // Access backend base URL from .env
+    const backendUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL // Access backend base URL from .env
     const [isLoggedIn, setIsLoggedIn] = useState(false)
     const [userData, setUserData] = useState(null)
     const [isLoading, setIsLoading] = useState(true)

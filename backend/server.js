@@ -22,7 +22,8 @@ connectDB();
 
 const allowedOrigins = [
         'http://localhost:5173',
-        'https://vhealpoints.vercel.app'
+        'https://vhealpoints.vercel.app',
+        'https://vhealpoints.onrender.com'
     ];
 
 app.use(express.json());
