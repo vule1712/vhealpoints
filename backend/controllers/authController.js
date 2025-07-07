@@ -306,12 +306,15 @@ export const resetPassword = async (req, res) => {
 // Google OAuth Login
 export const googleLogin = async (req, res) => {
     try {
+        console.log('Google login request received');
         const { token } = req.body;
 
         if (!token) {
+            console.log('Google login: No token provided');
             return res.json({ success: false, message: 'Google token is required' });
         }
 
+        console.log('Google login: Getting user info from Google...');
         // Get user info from Google using access token
         const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
             headers: {
@@ -320,26 +323,32 @@ export const googleLogin = async (req, res) => {
         });
 
         if (!userInfoResponse.ok) {
+            console.log('Google login: Failed to get user info from Google');
             return res.json({ success: false, message: 'Failed to get user info from Google' });
         }
 
         const userInfo = await userInfoResponse.json();
         const { id: googleId, email, name, picture } = userInfo;
+        console.log('Google login: User info received:', { email, name, googleId });
 
         // Check if user already exists with this Google ID
         let user = await userModel.findOne({ googleId });
+        console.log('Google login: Checking for existing user with Google ID:', user ? 'Found' : 'Not found');
 
         if (!user) {
             // Check if user exists with this email but different login method
             user = await userModel.findOne({ email });
+            console.log('Google login: Checking for existing user with email:', user ? 'Found' : 'Not found');
             
             if (user) {
                 // User exists but hasn't linked Google account
                 if (user.googleId) {
+                    console.log('Google login: User exists with different Google account');
                     return res.json({ success: false, message: 'Account already exists with different login method' });
                 }
                 
                 // Link Google account to existing user
+                console.log('Google login: Linking Google account to existing user');
                 user.googleId = googleId;
                 user.googleEmail = email;
                 user.avatar = picture;
@@ -347,6 +356,7 @@ export const googleLogin = async (req, res) => {
                 await user.save();
             } else {
                 // Create new user with Google OAuth - always as Patient
+                console.log('Google login: Creating new user');
                 user = new userModel({
                     name,
                     email,
@@ -364,15 +374,18 @@ export const googleLogin = async (req, res) => {
         }
 
         // Generate JWT token
+        console.log('Google login: Generating JWT token for user:', user._id);
         const jwtToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
         res.cookie('token', jwtToken, {
             httpOnly: true,
             secure: true, // Always secure for HTTPS
-            sameSite: 'none', // Allow cross-origin
+            sameSite: 'lax', // More mobile-friendly
             maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
             path: '/'
         });
+        console.log('Google login: Cookie set successfully');
 
+        console.log('Google login: Sending success response');
         return res.json({
             success: true,
             message: 'Google login successful',
