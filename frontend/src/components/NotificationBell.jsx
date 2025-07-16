@@ -39,10 +39,17 @@ const NotificationBell = () => {
             setNotifications((prevNotifications) => [newNotification, ...prevNotifications]);
         });
 
+        // Listen for notification-read event to refetch notifications
+        socket.on('notification-read', () => {
+            console.log('NotificationBell: Received notification-read event, refetching notifications');
+            fetchNotifications();
+        });
+
         return () => {
             console.log('NotificationBell: Cleaning up socket listener');
             socket.off('connect');
             socket.off('notification');
+            socket.off('notification-read');
         };
         }
     }, [socket, userData]);
