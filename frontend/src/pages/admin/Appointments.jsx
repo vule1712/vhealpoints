@@ -60,11 +60,13 @@ const Appointments = () => {
 
     // Get unique doctors from appointments
     const getUniqueDoctors = () => {
-        const doctors = appointments.map(app => ({
-            id: app.doctorId._id,
-            name: app.doctorId.name,
-            specialization: app.doctorId.specialization
-        }));
+        const doctors = appointments
+            .filter(app => app.doctorId) // Only include if doctorId exists
+            .map(app => ({
+                id: app.doctorId._id,
+                name: app.doctorId.name,
+                specialization: app.doctorId.specialization
+            }));
         return Array.from(new Set(doctors.map(d => JSON.stringify(d))))
             .map(d => JSON.parse(d));
     };
@@ -143,7 +145,7 @@ const Appointments = () => {
 
     const filteredAppointments = appointments.filter(appointment => {
         const statusMatch = statusFilter === 'All' || appointment.status === statusFilter;
-        const doctorMatch = doctorFilter === 'all' || appointment.doctorId._id === doctorFilter;
+        const doctorMatch = doctorFilter === 'all' || (appointment.doctorId && appointment.doctorId._id === doctorFilter);
         return statusMatch && doctorMatch;
     });
 
