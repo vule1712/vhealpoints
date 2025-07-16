@@ -109,6 +109,8 @@ const checkAndUpdateAppointmentStatus = async (appointment) => {
                     const patientSocketId = userSocketMap[updatedAppointment.patientId._id.toString()];
                     if (patientSocketId) {
                         io.to(patientSocketId).emit('notification', notificationToPatient);
+                        // Also emit patient dashboard update
+                        emitPatientDashboardUpdate(updatedAppointment.patientId._id.toString(), {/* you may want to pass updated stats here */});
                     }
                     // Notify doctor
                     const messageToDoctor = `Your appointment with patient ${updatedAppointment.patientId.name} has been completed.`;
@@ -122,17 +124,11 @@ const checkAndUpdateAppointmentStatus = async (appointment) => {
                     const doctorSocketId = userSocketMap[updatedAppointment.doctorId._id.toString()];
                     if (doctorSocketId) {
                         io.to(doctorSocketId).emit('notification', notificationToDoctor);
+                        // Also emit doctor dashboard update
+                        emitDoctorDashboardUpdate(updatedAppointment.doctorId._id.toString(), {/* you may want to pass updated stats here */});
                     }
-
-                    // Create a copy of the appointment with correct ID structure for emitDashboardUpdates
-                    const appointmentForUpdates = {
-                        ...updatedAppointment.toObject(),
-                        doctorId: updatedAppointment.doctorId._id,
-                        patientId: updatedAppointment.patientId._id
-                    };
-
-                    // Emit dashboard updates for all roles
-                    await emitDashboardUpdates(appointmentForUpdates);
+                    // Emit admin dashboard update
+                    emitAdminDashboardUpdate({/* you may want to pass updated stats here */});
                 }
             }
         }
