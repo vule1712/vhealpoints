@@ -1,6 +1,7 @@
 import { Server } from 'socket.io';
 
 let io;
+// Change userSocketMap to store arrays of socket IDs per user
 const userSocketMap = {};
 
 export const initSocket = (server) => {
@@ -19,30 +20,34 @@ export const initSocket = (server) => {
 
         const userId = socket.handshake.auth.userId;
         if (userId) {
-        userSocketMap[userId] = socket.id;
-        console.log(`User ${userId} connected with socket ${socket.id}`);
-        console.log('Current userSocketMap:', userSocketMap);
+            // Add this socket ID to the user's array
+            if (!userSocketMap[userId]) {
+                userSocketMap[userId] = [];
+            }
+            userSocketMap[userId].push(socket.id);
+            console.log(`User ${userId} connected with socket ${socket.id}`);
+            console.log('Current userSocketMap:', userSocketMap);
         } else {
             console.log('User connected without userId');
         }
 
         socket.on('disconnect', () => {
-        for (let id in userSocketMap) {
-            if (userSocketMap[id] === socket.id) {
-            delete userSocketMap[id];
-            console.log(`User ${id} disconnected`);
-            console.log('Updated userSocketMap:', userSocketMap);
-            break;
+            for (let id in userSocketMap) {
+                userSocketMap[id] = userSocketMap[id].filter(sid => sid !== socket.id);
+                if (userSocketMap[id].length === 0) {
+                    delete userSocketMap[id];
+                    console.log(`User ${id} disconnected (all sockets closed)`);
+                }
             }
-        }
-        console.log('User disconnected:', socket.id);
+            console.log('User disconnected:', socket.id);
+            console.log('Updated userSocketMap:', userSocketMap);
         });
     });
 
     return io;
-    };
+};
 
-    export const getIO = () => {
+export const getIO = () => {
     if (!io) {
         throw new Error('Socket.io not initialized!');
     }
@@ -51,6 +56,15 @@ export const initSocket = (server) => {
 
 export const getUserSocketMap = () => {
     return userSocketMap;
+};
+
+// Helper to emit to all sockets for a user
+const emitToUser = (userId, event, data) => {
+    if (io && userSocketMap[userId]) {
+        userSocketMap[userId].forEach(socketId => {
+            io.to(socketId).emit(event, data);
+        });
+    }
 };
 
 // Function to emit dashboard updates for admin
@@ -64,26 +78,7 @@ export const emitAdminDashboardUpdate = (stats) => {
 export const emitDoctorDashboardUpdate = (doctorId, stats) => {
     console.log('=== emitDoctorDashboardUpdate START ===');
     console.log('emitDoctorDashboardUpdate called with:', { doctorId, stats });
-    
-    if (io) {
-        const doctorSocketId = userSocketMap[doctorId];
-        console.log('emitDoctorDashboardUpdate details:', {
-            doctorId,
-            doctorSocketId,
-            stats,
-            userSocketMap: Object.keys(userSocketMap),
-            userSocketMapValues: Object.values(userSocketMap)
-        });
-        if (doctorSocketId) {
-            io.to(doctorSocketId).emit('doctor-dashboard-update', stats);
-            console.log('Doctor dashboard update sent to socket:', doctorSocketId);
-        } else {
-            console.log('Doctor not connected to socket:', doctorId);
-            console.log('Available users in userSocketMap:', Object.keys(userSocketMap));
-        }
-    } else {
-        console.log('Socket.io not initialized!');
-    }
+    emitToUser(doctorId, 'doctor-dashboard-update', stats);
     console.log('=== emitDoctorDashboardUpdate END ===');
 };
 
@@ -91,25 +86,6 @@ export const emitDoctorDashboardUpdate = (doctorId, stats) => {
 export const emitPatientDashboardUpdate = (patientId, stats) => {
     console.log('=== emitPatientDashboardUpdate START ===');
     console.log('emitPatientDashboardUpdate called with:', { patientId, stats });
-    
-    if (io) {
-        const patientSocketId = userSocketMap[patientId];
-        console.log('emitPatientDashboardUpdate details:', {
-            patientId,
-            patientSocketId,
-            stats,
-            userSocketMap: Object.keys(userSocketMap),
-            userSocketMapValues: Object.values(userSocketMap)
-        });
-        if (patientSocketId) {
-            io.to(patientSocketId).emit('patient-dashboard-update', stats);
-            console.log('Patient dashboard update sent to socket:', patientSocketId);
-        } else {
-            console.log('Patient not connected to socket:', patientId);
-            console.log('Available users in userSocketMap:', Object.keys(userSocketMap));
-        }
-    } else {
-        console.log('Socket.io not initialized!');
-    }
+    emitToUser(patientId, 'patient-dashboard-update', stats);
     console.log('=== emitPatientDashboardUpdate END ===');
 }; 
