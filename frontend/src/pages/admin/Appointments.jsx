@@ -231,8 +231,8 @@ const Appointments = () => {
                                                         <span className="text-blue-600 text-lg">👨‍⚕️</span>
                                                     </div>
                                                     <div className="ml-4">
-                                                        <div className="text-sm font-medium text-gray-900">{appointment.doctorId.name}</div>
-                                                        <div className="text-sm text-gray-500">{appointment.doctorId.specialization}</div>
+                                                        <div className="text-sm font-medium text-gray-900">{appointment.doctorId?.name || 'N/A'}</div>
+                                                        <div className="text-sm text-gray-500">{appointment.doctorId?.specialization || 'N/A'}</div>
                                                     </div>
                                                 </div>
                                             </td>
@@ -242,8 +242,8 @@ const Appointments = () => {
                                                         <span className="text-green-600 text-lg">👤</span>
                                                     </div>
                                                     <div className="ml-4">
-                                                        <div className="text-sm text-gray-900">{appointment.patientId.name}</div>
-                                                        <div className="text-sm text-gray-500">{appointment.patientId.email}</div>
+                                                        <div className="text-sm text-gray-900">{appointment.patientId?.name || 'N/A'}</div>
+                                                        <div className="text-sm text-gray-500">{appointment.patientId?.email || 'N/A'}</div>
                                                     </div>
                                                 </div>
                                             </td>
