@@ -45,6 +45,8 @@ export const getDoctorPatients = async(req, res) => {
 
         // Get unique patients who have appointments with this doctor
         const uniquePatients = appointments.reduce((acc, appointment) => {
+            // Defensive: skip if patientId is not populated
+            if (!appointment.patientId || !appointment.patientId._id) return acc;
             const patientId = appointment.patientId._id.toString();
             if (!acc[patientId]) {
                 acc[patientId] = {
