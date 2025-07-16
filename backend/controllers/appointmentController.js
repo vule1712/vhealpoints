@@ -109,8 +109,9 @@ const checkAndUpdateAppointmentStatus = async (appointment) => {
                     const patientSocketId = userSocketMap[updatedAppointment.patientId._id.toString()];
                     if (patientSocketId) {
                         io.to(patientSocketId).emit('notification', notificationToPatient);
-                        // Also emit patient dashboard update
-                        emitPatientDashboardUpdate(updatedAppointment.patientId._id.toString(), {/* you may want to pass updated stats here */});
+                        // Also emit patient dashboard update with latest stats
+                        const patientStats = await getPatientStats(updatedAppointment.patientId._id);
+                        emitPatientDashboardUpdate(updatedAppointment.patientId._id.toString(), patientStats);
                     }
                     // Notify doctor
                     const messageToDoctor = `Your appointment with patient ${updatedAppointment.patientId.name} has been completed.`;
@@ -124,11 +125,13 @@ const checkAndUpdateAppointmentStatus = async (appointment) => {
                     const doctorSocketId = userSocketMap[updatedAppointment.doctorId._id.toString()];
                     if (doctorSocketId) {
                         io.to(doctorSocketId).emit('notification', notificationToDoctor);
-                        // Also emit doctor dashboard update
-                        emitDoctorDashboardUpdate(updatedAppointment.doctorId._id.toString(), {/* you may want to pass updated stats here */});
+                        // Also emit doctor dashboard update with latest stats
+                        const doctorStats = await getDoctorStats(updatedAppointment.doctorId._id);
+                        emitDoctorDashboardUpdate(updatedAppointment.doctorId._id.toString(), doctorStats);
                     }
-                    // Emit admin dashboard update
-                    emitAdminDashboardUpdate({/* you may want to pass updated stats here */});
+                    // Emit admin dashboard update with latest stats
+                    const adminStats = await getAdminStats();
+                    emitAdminDashboardUpdate(adminStats);
                 }
             }
         }
