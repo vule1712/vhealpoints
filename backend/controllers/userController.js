@@ -88,11 +88,17 @@ export const getTotalPatients = async(req, res) => {
 export const getDoctorTotalPatients = async(req, res) => {
     try {
         const doctorId = req.user.userId;
-        
-        // Get count of unique patients who have appointments with this doctor
-        const uniquePatients = await appointmentModel.distinct('patientId', { doctorId });
-        const count = uniquePatients.length;
-        
+        // Get all appointments for this doctor and populate patientId
+        const appointments = await appointmentModel.find({ doctorId })
+            .populate('patientId', '_id');
+        // Use a Set to collect unique, valid patient IDs
+        const uniquePatientIds = new Set();
+        appointments.forEach(app => {
+            if (app.patientId && app.patientId._id) {
+                uniquePatientIds.add(app.patientId._id.toString());
+            }
+        });
+        const count = uniquePatientIds.size;
         res.json({
             success: true,
             count
