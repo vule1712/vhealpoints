@@ -9,6 +9,7 @@ export const initSocket = (server) => {
         cors: {
             origin: [
                 'https://vhealpoints.vercel.app',
+                'https://vhealpoints.onrender.com',
                 'http://localhost:5173'
             ],
             credentials: true,
