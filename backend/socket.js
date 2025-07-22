@@ -1,5 +1,4 @@
 import { Server } from 'socket.io';
-import { allowedOrigins, vercelPreviewPattern } from './config/corsOrigins.js';
 
 let io;
 // Change userSocketMap to store arrays of socket IDs per user
@@ -8,13 +7,11 @@ const userSocketMap = {};
 export const initSocket = (server) => {
     io = new Server(server, {
         cors: {
-            origin: function (origin, callback) {
-                // Allow requests with no origin (like mobile apps, curl, etc.)
-                if (!origin) return callback(null, true);
-                if (allowedOrigins.includes(origin)) return callback(null, true);
-                if (vercelPreviewPattern.test(origin)) return callback(null, true);
-                callback(new Error('Not allowed by CORS'));
-            },
+            origin: [
+                'https://vhealpoints.vercel.app',
+                'https://vhealpoints.onrender.com',
+                'http://localhost:5173'
+            ],
             credentials: true,
         },
     });

@@ -148,8 +148,13 @@ export const AppContextProvider = (props) => {
     }, [backendUrl])
 
     useEffect(() => {
-        if (isLoggedIn && userData) {
-            console.log('AppContext: Setting up socket connection for user:', userData._id);
+        // Always disconnect first to ensure a clean state
+        if (socket.connected) {
+            socket.disconnect();
+        }
+
+        if (isLoggedIn && userData && userData._id) {
+            // Set userId before connecting
             socket.auth.userId = userData._id;
             socket.connect();
             
@@ -183,10 +188,13 @@ export const AppContextProvider = (props) => {
             socket.on('doctor-dashboard-update', handleDoctorUpdate);
             socket.on('patient-dashboard-update', handlePatientUpdate);
             socket.on('admin-dashboard-update', handleAdminUpdate);
-            
         } else {
+            // If not logged in or no user data, ensure socket is disconnected and userId is cleared
+            socket.auth.userId = null;
+            if (socket.connected) {
+                socket.disconnect();
+            }
             console.log('AppContext: Disconnecting socket - not logged in or no user data');
-            socket.disconnect();
         }
 
         return () => {
@@ -197,7 +205,9 @@ export const AppContextProvider = (props) => {
             socket.off('doctor-dashboard-update');
             socket.off('patient-dashboard-update');
             socket.off('admin-dashboard-update');
-            socket.disconnect();
+            if (socket.connected) {
+                socket.disconnect();
+            }
         }
     }, [isLoggedIn, userData]);
 
