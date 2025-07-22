@@ -13,6 +13,7 @@ import doctorRouter from './routes/doctorRoutes.js';
 import contactRouter from './routes/contactRoutes.js';
 import doctorRatingRoutes from './routes/doctorRatingRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
+import { allowedOrigins, vercelPreviewPattern } from './config/corsOrigins.js';
 
 const app = express();
 const server = http.createServer(app);
@@ -20,19 +21,11 @@ const io = initSocket(server);
 const PORT = process.env.PORT || 5000;
 connectDB();
 
-const allowedOrigins = [
-        'http://localhost:5173',
-        'https://vhealpoints.vercel.app'
-    ];
-
-// Add Vercel preview domains dynamically
-const vercelPreviewPattern = /^https:\/\/vhealpoints-.*-vulephuonganhs-projects\.vercel\.app$/;
-
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
     origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps or curl requests)
+        // Allow requests with no origin
         if (!origin) return callback(null, true);
         
         // Allow localhost and main Vercel domain
