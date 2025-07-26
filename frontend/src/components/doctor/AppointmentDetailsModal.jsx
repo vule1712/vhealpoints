@@ -20,9 +20,11 @@ const AppointmentDetailsModal = ({
     const [doctorComment, setDoctorComment] = useState('');
     const [isCompleting, setIsCompleting] = useState(false);
     const [showPDFPreview, setShowPDFPreview] = useState(false);
+    const [currentAppointment, setCurrentAppointment] = useState(null);
 
     useEffect(() => {
         if (appointment) {
+            setCurrentAppointment(appointment);
             setDoctorComment(appointment.doctorComment || '');
         }
     }, [appointment]);
@@ -118,6 +120,13 @@ const AppointmentDetailsModal = ({
             if (response.data.success) {
                 toast.success('Comment updated successfully');
                 setIsEditingComment(false);
+                
+                // Update the local appointment data with the new comment
+                setCurrentAppointment(prev => ({
+                    ...prev,
+                    doctorComment: doctorComment
+                }));
+                
                 if (onAppointmentUpdate) {
                     onAppointmentUpdate();
                 }
@@ -127,7 +136,7 @@ const AppointmentDetailsModal = ({
         }
     };
 
-    if (!showModal || !appointment) return null;
+    if (!showModal || !currentAppointment) return null;
 
     return (
         <>
@@ -145,29 +154,29 @@ const AppointmentDetailsModal = ({
                     <div className="space-y-6">
                         <div>
                             <p className="text-gray-600 text-sm">Patient Name</p>
-                            <p className="font-semibold text-lg">{appointment.patientId?.name || 'Unknown Patient'}</p>
+                            <p className="font-semibold text-lg">{currentAppointment.patientId?.name || 'Unknown Patient'}</p>
                         </div>
                         <div>
                             <p className="text-gray-600 text-sm">Date & Time</p>
                             <p className="font-semibold text-lg">
-                                {formatDateTime(appointment.slotId?.date)}
+                                {formatDateTime(currentAppointment.slotId?.date)}
                             </p>
                             <p className="text-gray-500">
-                                {formatTime(appointment.slotId?.startTime)} - 
-                                {formatTime(appointment.slotId?.endTime)}
+                                {formatTime(currentAppointment.slotId?.startTime)} - 
+                                {formatTime(currentAppointment.slotId?.endTime)}
                             </p>
                         </div>
                         <div>
                             <p className="text-gray-600 text-sm">Status</p>
                             <p className={`font-semibold text-lg ${
-                                appointment.status === 'Completed' ? 'text-blue-600' :
-                                appointment.status === 'Confirmed' ? 'text-green-600' :
+                                currentAppointment.status === 'Completed' ? 'text-blue-600' :
+                                currentAppointment.status === 'Confirmed' ? 'text-green-600' :
                                 'text-red-600'
                             }`}>
-                                {appointment.status}
+                                {currentAppointment.status}
                             </p>
                         </div>
-                        {appointment.status === 'Confirmed' && (
+                        {currentAppointment.status === 'Confirmed' && (
                             <div className="mt-6 p-4 border border-blue-200 rounded-md bg-blue-50">
                                 <h3 className="text-lg font-semibold text-blue-800 mb-4">Complete Appointment</h3>
                                 <div className="space-y-4">
@@ -195,7 +204,7 @@ const AppointmentDetailsModal = ({
                                 </div>
                             </div>
                         )}
-                        {appointment.status === 'Completed' && (
+                        {currentAppointment.status === 'Completed' && (
                             <div className="mt-6 p-4 border border-green-200 rounded-md bg-green-50">
                                 <div className="flex justify-between items-center mb-2">
                                     <h3 className="text-lg font-semibold text-green-800">Doctor's Comment</h3>
@@ -221,7 +230,7 @@ const AppointmentDetailsModal = ({
                                             <button
                                                 onClick={() => {
                                                     setIsEditingComment(false);
-                                                    setDoctorComment(appointment.doctorComment || '');
+                                                    setDoctorComment(currentAppointment.doctorComment || '');
                                                 }}
                                                 className="px-3 py-1 text-gray-600 hover:text-gray-800"
                                             >
@@ -237,22 +246,22 @@ const AppointmentDetailsModal = ({
                                     </div>
                                 ) : (
                                     <p className="text-gray-700">
-                                        {appointment.doctorComment || 'No comment provided'}
+                                        {currentAppointment.doctorComment || 'No comment provided'}
                                     </p>
                                 )}
                             </div>
                         )}
-                        {appointment.notes && (
+                        {currentAppointment.notes && (
                             <div>
                                 <p className="text-gray-600 text-sm">Notes</p>
-                                <p className="font-semibold text-lg">{appointment.notes}</p>
+                                <p className="font-semibold text-lg">{currentAppointment.notes}</p>
                             </div>
                         )}
                     </div>
 
                     <div className="mt-8 flex justify-between">
                         <div className="flex space-x-4">
-                            {appointment.status === 'Completed' && (
+                            {currentAppointment.status === 'Completed' && (
                                 <>
                                     <button
                                         onClick={() => setShowPDFPreview(true)}
@@ -262,7 +271,7 @@ const AppointmentDetailsModal = ({
                                     </button>
                                     {showPDFPreview && (
                                         <AppointmentPDFPreview
-                                            appointment={appointment}
+                                            appointment={currentAppointment}
                                             onClose={() => setShowPDFPreview(false)}
                                         />
                                     )}
@@ -270,7 +279,7 @@ const AppointmentDetailsModal = ({
                             )}
                         </div>
                         <div className="flex space-x-4">
-                            {appointment.status !== 'Completed' && (
+                            {currentAppointment.status !== 'Completed' && (
                                 <button
                                     onClick={() => setShowDeleteModal(true)}
                                     className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
@@ -278,7 +287,7 @@ const AppointmentDetailsModal = ({
                                     Cancel the appointment
                                 </button>
                             )}
-                            {appointment.status === 'Completed' && (
+                            {currentAppointment.status === 'Completed' && (
                                 <p className="text-green-600 font-medium">This appointment has been completed</p>
                             )}
                             <button
