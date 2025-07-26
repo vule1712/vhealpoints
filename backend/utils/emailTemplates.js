@@ -54,8 +54,6 @@ const getWelcomeEmailTemplate = (name) => {
                 <li>Receive appointment reminders</li>
                 <li>Track your medical history</li>
             </ul>
-            <p>To get started, please verify your email address by clicking the button below:</p>
-            <a href="${process.env.FRONTEND_URL}/email-verify" class="button">Verify Email</a>
             <p>If you have any questions or need assistance, our support team is here to help.</p>
             <p>Best regards,<br>The vHealPoints Team</p>
         </div>
