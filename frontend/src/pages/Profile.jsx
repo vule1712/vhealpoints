@@ -28,10 +28,27 @@ const Profile = () => {
         'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'
     ];
 
+    // Update formData when userData changes
+    useEffect(() => {
+        if (userData) {
+            console.log('UserData loaded:', userData);
+            setFormData({
+                name: userData.name || '',
+                specialization: userData.specialization || '',
+                clinicName: userData.clinicName || '',
+                clinicAddress: userData.clinicAddress || '',
+                aboutMe: userData.aboutMe || '',
+                bloodType: userData.bloodType || '',
+                phone: userData.phone || ''
+            });
+        }
+    }, [userData]);
+
     useEffect(() => {
         const fetchRatings = async () => {
             if (userData?.role === 'Doctor') {
                 try {
+                    console.log('Fetching ratings for doctor:', userData._id);
                     const response = await axios.get(`${backendUrl}/api/doctor-ratings/${userData._id}`, {
                         withCredentials: true,
                         headers: {
@@ -40,7 +57,10 @@ const Profile = () => {
                     });
                     
                     if (response.data.success) {
+                        console.log('Ratings fetched successfully:', response.data.ratings);
                         setRatings(response.data.ratings);
+                    } else {
+                        console.error('Failed to fetch ratings:', response.data.message);
                     }
                 } catch (err) {
                     console.error('Error fetching ratings:', err);

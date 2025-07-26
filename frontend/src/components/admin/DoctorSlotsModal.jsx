@@ -431,21 +431,21 @@ const DoctorSlotsModal = ({ doctor, showModal, onClose, onSlotsUpdate }) => {
 
                 {/* Slots List - Scrollable Container */}
                 <div id="slots-list-container" className="flex-1 overflow-y-auto p-4 min-h-0">
-                    {loading ? (
-                        <div className="animate-pulse space-y-4">
-                            {[1, 2, 3].map((i) => (
-                                <div key={i} className="border-b border-gray-200 pb-4">
-                                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                                </div>
-                            ))}
-                        </div>
-                    ) : error ? (
-                        <div className="text-red-500 text-center py-4">{error}</div>
-                    ) : (
-                        <div className="space-y-4">
-                            {slots.length > 0 ? (
-                                slots.map((slot) => (
+                {loading ? (
+                    <div className="animate-pulse space-y-4">
+                        {[1, 2, 3].map((i) => (
+                            <div key={i} className="border-b border-gray-200 pb-4">
+                                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                            </div>
+                        ))}
+                    </div>
+                ) : error ? (
+                    <div className="text-red-500 text-center py-4">{error}</div>
+                ) : (
+                    <div className="space-y-4">
+                        {slots.length > 0 ? (
+                            slots.map((slot) => (
                                 <div
                                     key={slot._id}
                                     className="border rounded-lg p-4 hover:shadow-md transition-shadow"
@@ -537,8 +537,8 @@ const DoctorSlotsModal = ({ doctor, showModal, onClose, onSlotsUpdate }) => {
                         ) : (
                             <p className="text-gray-500 text-center py-4">No slots found</p>
                         )}
-                        </div>
-                    )}
+                    </div>
+                )}
                 </div>
             </div>
         </div>
