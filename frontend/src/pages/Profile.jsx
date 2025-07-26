@@ -61,9 +61,12 @@ const Profile = () => {
                         setRatings(response.data.ratings);
                     } else {
                         console.error('Failed to fetch ratings:', response.data.message);
+                        toast.error(response.data.message || 'Failed to fetch ratings');
                     }
                 } catch (err) {
                     console.error('Error fetching ratings:', err);
+                    console.error('Error response:', err.response?.data);
+                    toast.error('Failed to fetch ratings');
                 }
             }
         };

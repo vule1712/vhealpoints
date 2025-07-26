@@ -29,6 +29,14 @@ const DoctorPersonalRatingStats = ({ doctorId }) => {
             setLoading(false);
             return;
         }
+        
+        // Validate doctorId format
+        if (typeof doctorId !== 'string' || doctorId.length < 10) {
+            setError('Invalid Doctor ID format');
+            setLoading(false);
+            return;
+        }
+        
         fetchRatingStats();
     }, [doctorId, backendUrl]);
 
@@ -36,12 +44,18 @@ const DoctorPersonalRatingStats = ({ doctorId }) => {
         try {
             setLoading(true);
             setError(null);
+            console.log('Fetching rating stats for doctorId:', doctorId);
+            
             const response = await axios.get(`${backendUrl}/api/doctor-ratings/${doctorId}`, {
                 withCredentials: true
             });
 
+            console.log('Rating stats response:', response.data);
+
             if (response.data.success) {
                 const { ratings, averageRating } = response.data;
+                console.log('Processing ratings:', ratings);
+                
                 const ratingDistribution = {
                     '5': 0,
                     '4': 0,
@@ -53,7 +67,9 @@ const DoctorPersonalRatingStats = ({ doctorId }) => {
                 // Process ratings for distribution
                 ratings.forEach(rating => {
                     const roundedRating = Math.round(rating.rating);
-                    ratingDistribution[roundedRating]++;
+                    if (ratingDistribution[roundedRating] !== undefined) {
+                        ratingDistribution[roundedRating]++;
+                    }
                 });
 
                 // Process ratings for time series
@@ -75,13 +91,19 @@ const DoctorPersonalRatingStats = ({ doctorId }) => {
 
                 // Count ratings for each month
                 ratings.forEach(rating => {
-                    const ratingDate = parseISO(rating.createdAt);
-                    const monthData = last6Months.find(month => 
-                        ratingDate >= month.startDate && ratingDate <= month.endDate
-                    );
-                    if (monthData) {
-                        const roundedRating = Math.round(rating.rating).toString();
-                        monthData.ratings[roundedRating]++;
+                    try {
+                        const ratingDate = parseISO(rating.createdAt);
+                        const monthData = last6Months.find(month => 
+                            ratingDate >= month.startDate && ratingDate <= month.endDate
+                        );
+                        if (monthData) {
+                            const roundedRating = Math.round(rating.rating).toString();
+                            if (monthData.ratings[roundedRating] !== undefined) {
+                                monthData.ratings[roundedRating]++;
+                            }
+                        }
+                    } catch (dateError) {
+                        console.error('Error processing rating date:', dateError, rating);
                     }
                 });
 
@@ -100,17 +122,22 @@ const DoctorPersonalRatingStats = ({ doctorId }) => {
                     };
                 });
 
-                setStats({
+                const statsData = {
                     averageRating,
                     totalRatings: ratings.length,
                     ratingDistribution,
                     timeSeriesData
-                });
+                };
+
+                console.log('Setting stats:', statsData);
+                setStats(statsData);
             } else {
+                console.error('Failed to fetch rating stats:', response.data.message);
                 setError(response.data.message || 'Failed to fetch rating statistics');
             }
         } catch (error) {
             console.error('Error fetching rating stats:', error);
+            console.error('Error response:', error.response?.data);
             setError(error.response?.data?.message || 'Failed to fetch rating statistics');
             toast.error('Failed to fetch rating statistics');
         } finally {
@@ -167,8 +194,15 @@ const DoctorPersonalRatingStats = ({ doctorId }) => {
 
     if (stats.totalRatings === 0) {
         return (
-            <div className="text-center py-8">
-                <p className="text-gray-500">No ratings available yet</p>
+            <div className="bg-white rounded-lg shadow-md p-6">
+                <h2 className="text-2xl font-semibold mb-6 text-gray-800">Rating Statistics</h2>
+                <div className="text-center py-12">
+                    <div className="text-gray-400 mb-4">
+                        <FaStar className="w-16 h-16 mx-auto" />
+                    </div>
+                    <h3 className="text-lg font-medium text-gray-600 mb-2">No Ratings Yet</h3>
+                    <p className="text-gray-500">You haven't received any patient ratings yet. Ratings will appear here once patients rate your services.</p>
+                </div>
             </div>
         );
     }

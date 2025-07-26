@@ -125,6 +125,16 @@ export const getDoctorRatings = async (req, res) => {
             });
         }
 
+        // Validate doctorId format
+        if (!doctorId.match(/^[0-9a-fA-F]{24}$/)) {
+            console.error('Invalid doctorId format:', doctorId);
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid Doctor ID format'
+            });
+        }
+
+        console.log('Searching for ratings with doctorId:', doctorId);
         const ratings = await DoctorRating.find({ doctorId })
             .populate({
                 path: 'patientId',
@@ -140,13 +150,17 @@ export const getDoctorRatings = async (req, res) => {
             ? ratings.reduce((acc, curr) => acc + curr.rating, 0) / ratings.length
             : 0;
 
-        res.json({
+        const response = {
             success: true,
             ratings,
             averageRating: parseFloat(averageRating.toFixed(1))
-        });
+        };
+
+        console.log('Sending response:', response);
+        res.json(response);
     } catch (error) {
         console.error('Error in getDoctorRatings:', error);
+        console.error('Error stack:', error.stack);
         res.status(500).json({
             success: false,
             message: error.message || 'Error fetching doctor ratings'
