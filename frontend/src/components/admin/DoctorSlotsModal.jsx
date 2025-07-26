@@ -53,6 +53,19 @@ const DoctorSlotsModal = ({ doctor, showModal, onClose, onSlotsUpdate }) => {
         }
     }, [showModal, doctor]);
 
+    // Scroll to bottom when slots are loaded
+    useEffect(() => {
+        if (slots.length > 0 && !loading) {
+            const slotsContainer = document.getElementById('slots-list-container');
+            if (slotsContainer) {
+                slotsContainer.scrollTo({
+                    top: slotsContainer.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }
+        }
+    }, [slots, loading]);
+
     const formatDateTime = (dateString) => {
         try {
             let date;
@@ -322,8 +335,19 @@ const DoctorSlotsModal = ({ doctor, showModal, onClose, onSlotsUpdate }) => {
                     startTime: '09:00',
                     endTime: '10:00'
                 });
-                fetchSlots();
+                await fetchSlots();
                 if (onSlotsUpdate) onSlotsUpdate();
+                
+                // Scroll to the bottom of the slots list after adding a new slot
+                setTimeout(() => {
+                    const slotsContainer = document.getElementById('slots-list-container');
+                    if (slotsContainer) {
+                        slotsContainer.scrollTo({
+                            top: slotsContainer.scrollHeight,
+                            behavior: 'smooth'
+                        });
+                    }
+                }, 100);
             } else {
                 toast.error(response.data.message || 'Failed to add slot');
             }
@@ -344,9 +368,9 @@ const DoctorSlotsModal = ({ doctor, showModal, onClose, onSlotsUpdate }) => {
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden">
+            <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] flex flex-col">
                 {/* Header */}
-                <div className="p-6 border-b border-gray-200">
+                <div className="p-6 border-b border-gray-200 flex-shrink-0">
                     <div className="flex justify-between items-start">
                         <div>
                             <h2 className="text-2xl font-bold text-gray-800">Doctor Details</h2>
@@ -366,7 +390,7 @@ const DoctorSlotsModal = ({ doctor, showModal, onClose, onSlotsUpdate }) => {
                 </div>
 
                 {/* Add New Slot Form */}
-                <div className="mb-8 p-4 border rounded-lg bg-gray-50">
+                <div className="p-4 border-b border-gray-200 bg-gray-50 flex-shrink-0">
                     <h3 className="text-lg font-semibold mb-4">Add New Slot</h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
@@ -405,22 +429,23 @@ const DoctorSlotsModal = ({ doctor, showModal, onClose, onSlotsUpdate }) => {
                     </button>
                 </div>
 
-                {/* Slots List */}
-                {loading ? (
-                    <div className="animate-pulse space-y-4">
-                        {[1, 2, 3].map((i) => (
-                            <div key={i} className="border-b border-gray-200 pb-4">
-                                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                            </div>
-                        ))}
-                    </div>
-                ) : error ? (
-                    <div className="text-red-500 text-center py-4">{error}</div>
-                ) : (
-                    <div className="space-y-4">
-                        {slots.length > 0 ? (
-                            slots.map((slot) => (
+                {/* Slots List - Scrollable Container */}
+                <div id="slots-list-container" className="flex-1 overflow-y-auto p-4 min-h-0">
+                    {loading ? (
+                        <div className="animate-pulse space-y-4">
+                            {[1, 2, 3].map((i) => (
+                                <div key={i} className="border-b border-gray-200 pb-4">
+                                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : error ? (
+                        <div className="text-red-500 text-center py-4">{error}</div>
+                    ) : (
+                        <div className="space-y-4">
+                            {slots.length > 0 ? (
+                                slots.map((slot) => (
                                 <div
                                     key={slot._id}
                                     className="border rounded-lg p-4 hover:shadow-md transition-shadow"
@@ -512,8 +537,9 @@ const DoctorSlotsModal = ({ doctor, showModal, onClose, onSlotsUpdate }) => {
                         ) : (
                             <p className="text-gray-500 text-center py-4">No slots found</p>
                         )}
-                    </div>
-                )}
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );
