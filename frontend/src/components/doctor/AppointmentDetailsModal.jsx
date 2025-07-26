@@ -107,6 +107,26 @@ const AppointmentDetailsModal = ({
         }
     };
 
+    const handleCommentSubmit = async () => {
+        try {
+            const response = await axios.put(
+                `${backendUrl}/api/appointments/${appointment._id}/comment`,
+                { doctorComment },
+                { withCredentials: true }
+            );
+
+            if (response.data.success) {
+                toast.success('Comment updated successfully');
+                setIsEditingComment(false);
+                if (onAppointmentUpdate) {
+                    onAppointmentUpdate();
+                }
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to update comment');
+        }
+    };
+
     if (!showModal || !appointment) return null;
 
     return (

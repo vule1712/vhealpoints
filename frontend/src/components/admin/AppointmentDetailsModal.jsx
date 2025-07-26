@@ -20,6 +20,8 @@ const AppointmentDetailsModal = ({
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [showPDFPreview, setShowPDFPreview] = useState(false);
 
+
+
     const formatDateTime = (dateString) => {
         try {
             // Parse date from DD/MM/YYYY format
@@ -139,6 +141,8 @@ const AppointmentDetailsModal = ({
             toast.error(error.response?.data?.message || 'Failed to delete appointment');
         }
     };
+
+    // Removed handleCommentSubmit function
 
     if (!showModal || !appointment) return null;
 
@@ -293,7 +297,6 @@ const AppointmentDetailsModal = ({
                                     <button
                                         onClick={() => {
                                             onClose();
-                                            setShowCancelForm(false);
                                         }}
                                         className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
                                     >

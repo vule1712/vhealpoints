@@ -65,6 +65,6 @@ appointmentRouter.put('/admin/slot/:slotId', adminAuth, updateSlotAdmin);
 appointmentRouter.delete('/admin/slot/:slotId', adminAuth, deleteSlotAdmin);
 
 // Add this route with the other appointment routes
-appointmentRouter.put('/:id/comment', userAuth, updateDoctorComment);
+appointmentRouter.put('/:appointmentId/comment', userAuth, updateDoctorComment);
 
 export default appointmentRouter; 

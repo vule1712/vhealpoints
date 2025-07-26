@@ -1502,6 +1502,8 @@ export const updateDoctorComment = async (req, res) => {
     }
 };
 
+
+
 // --- Appointment Reminder Scheduler ---
 const MS_PER_HOUR = 60 * 60 * 1000;
 const MS_PER_DAY = 24 * MS_PER_HOUR;
