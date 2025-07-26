@@ -30,8 +30,9 @@ const Profile = () => {
 
     // Update formData when userData changes
     useEffect(() => {
+        console.log('Profile: userData changed:', userData);
         if (userData) {
-            console.log('UserData loaded:', userData);
+            console.log('Profile: Setting formData with userData:', userData);
             setFormData({
                 name: userData.name || '',
                 specialization: userData.specialization || '',
@@ -44,9 +45,12 @@ const Profile = () => {
         }
     }, [userData]);
 
+
+
     useEffect(() => {
+        console.log('Profile: Ratings useEffect triggered with userData:', userData);
         const fetchRatings = async () => {
-            if (userData?.role === 'Doctor') {
+            if (userData?.role === 'Doctor' && userData?._id) {
                 try {
                     console.log('Fetching ratings for doctor:', userData._id);
                     const response = await axios.get(`${backendUrl}/api/doctor-ratings/${userData._id}`, {
@@ -68,6 +72,8 @@ const Profile = () => {
                     console.error('Error response:', err.response?.data);
                     toast.error('Failed to fetch ratings');
                 }
+            } else {
+                console.log('Profile: Not fetching ratings - userData not ready:', { role: userData?.role, id: userData?._id });
             }
         };
 
@@ -380,7 +386,14 @@ const Profile = () => {
                                                 Rating Statistics
                                             </label>
                                         </div>
-                                        <DoctorPersonalRatingStats doctorId={userData._id} />
+                                        {userData._id ? (
+                                            <DoctorPersonalRatingStats doctorId={userData._id} />
+                                        ) : (
+                                            <div className="text-center py-8">
+                                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                                                <p className="text-gray-500">Loading rating statistics...</p>
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Recent Feedbacks */}
@@ -391,7 +404,12 @@ const Profile = () => {
                                                 Recent Patient Feedbacks
                                             </label>
                                         </div>
-                                        {ratings.length === 0 ? (
+                                        {!userData._id ? (
+                                            <div className="text-center py-8">
+                                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                                                <p className="text-gray-500">Loading feedbacks...</p>
+                                            </div>
+                                        ) : ratings.length === 0 ? (
                                             <div className="text-center py-8">
                                                 <p className="text-gray-500">No feedbacks yet</p>
                                             </div>
