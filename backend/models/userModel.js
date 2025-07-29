@@ -43,21 +43,15 @@ const userSchema = new mongoose.Schema({
     // Doctor specific fields
     specialization: {
         type: String,
-        required: function() {
-            return this.role === 'Doctor';
-        }
+        default: ''
     },
     clinicName: {
         type: String,
-        required: function() {
-            return this.role === 'Doctor';
-        }
+        default: ''
     },
     clinicAddress: {
         type: String,
-        required: function() {
-            return this.role === 'Doctor';
-        }
+        default: ''
     },
     aboutMe: {
         type: String,

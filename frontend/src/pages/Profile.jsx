@@ -10,7 +10,7 @@ import AppointmentHistory from '../components/patient/AppointmentHistory';
 
 const Profile = () => {
     const navigate = useNavigate();
-    const { userData, backendUrl, setUserData } = useContext(AppContext);
+    const { userData, backendUrl, updateUserData } = useContext(AppContext);
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [ratings, setRatings] = useState([]);
@@ -96,6 +96,7 @@ const Profile = () => {
     const handleSave = async () => {
         setIsSaving(true);
         try {
+            console.log('Sending form data:', formData);
             const response = await axios.put(
                 `${backendUrl}/api/user/update-profile`,
                 formData,
@@ -103,7 +104,10 @@ const Profile = () => {
             );
             
             if (response.data.success) {
-                setUserData(response.data.userData);
+                console.log('Profile update response:', response.data);
+                // Update the user data in context and localStorage
+                updateUserData(response.data.userData);
+                
                 toast.success('Profile updated successfully');
                 setIsEditing(false);
             } else {
@@ -193,16 +197,13 @@ const Profile = () => {
                                             onClick={() => {
                                                 setIsEditing(false);
                                                 setFormData({
-                                                    name: userData.name,
+                                                    name: userData.name || '',
                                                     specialization: userData.specialization || '',
                                                     clinicName: userData.clinicName || '',
                                                     clinicAddress: userData.clinicAddress || '',
                                                     aboutMe: userData.aboutMe || '',
                                                     bloodType: userData.bloodType || '',
-                                                    phone: userData.phone || '',
-                                                    allergies: userData.allergies || '',
-                                                    medicalConditions: userData.medicalConditions || '',
-                                                    medications: userData.medications || ''
+                                                    phone: userData.phone || ''
                                                 });
                                             }}
                                             className="px-5 py-2.5 bg-white/10 text-white rounded-lg hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-200 font-medium border border-white/20"

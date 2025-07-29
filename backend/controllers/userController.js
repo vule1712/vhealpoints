@@ -4,19 +4,24 @@ import appointmentModel from "../models/appointmentModel.js";
 export const getUserData = async(req, res) => {
     try {
         const {userId} = req.user;
+        console.log('getUserData: Fetching user with ID:', userId);
 
         const user = await userModel.findById(userId).select('-password -verifyOtp -verifyOtpExpireAt -resetOtp -resetOtpExpireAt');
+        console.log('getUserData: Found user:', user);
 
         if (!user) {
+            console.log('getUserData: User not found');
             return res.json({success: false, message: 'User not found'});
         }
 
+        console.log('getUserData: Returning user data:', user);
         res.json({
             success: true,
             userData: user
         });
 
     } catch (error) {
+        console.error('getUserData: Error:', error);
         return res.json({success: false, message: error.message});
     }
 }
@@ -131,35 +136,62 @@ export const updateProfile = async(req, res) => {
     try {
         const { userId } = req.user;
         const { name, specialization, clinicName, clinicAddress, bloodType, targetUserId, aboutMe, phone } = req.body;
+        
+        console.log('updateProfile: Request body:', req.body);
+        console.log('updateProfile: User ID:', userId);
+        console.log('updateProfile: Target user ID:', targetUserId);
 
         // If targetUserId is provided, this is an admin update
         const userToUpdate = targetUserId ? await userModel.findById(targetUserId) : await userModel.findById(userId);
         
         if (!userToUpdate) {
+            console.log('updateProfile: User not found');
             return res.json({ success: false, message: 'User not found' });
         }
 
+        console.log('updateProfile: Found user to update:', userToUpdate);
+        console.log('updateProfile: User role:', userToUpdate.role);
+
         // Update name if provided
-        if (name) {
+        if (name !== undefined) {
+            console.log('updateProfile: Updating name from', userToUpdate.name, 'to', name);
             userToUpdate.name = name;
         }
 
         // Update phone number if provided
         if (phone !== undefined) {
+            console.log('updateProfile: Updating phone from', userToUpdate.phone, 'to', phone);
             userToUpdate.phone = phone;
         }
 
         // Update fields based on user role
         if (userToUpdate.role === 'Doctor') {
-            userToUpdate.specialization = specialization;
-            userToUpdate.clinicName = clinicName;
-            userToUpdate.clinicAddress = clinicAddress;
-            userToUpdate.aboutMe = aboutMe;
+            if (specialization !== undefined) {
+                console.log('updateProfile: Updating specialization from', userToUpdate.specialization, 'to', specialization);
+                userToUpdate.specialization = specialization;
+            }
+            if (clinicName !== undefined) {
+                console.log('updateProfile: Updating clinicName from', userToUpdate.clinicName, 'to', clinicName);
+                userToUpdate.clinicName = clinicName;
+            }
+            if (clinicAddress !== undefined) {
+                console.log('updateProfile: Updating clinicAddress from', userToUpdate.clinicAddress, 'to', clinicAddress);
+                userToUpdate.clinicAddress = clinicAddress;
+            }
+            if (aboutMe !== undefined) {
+                console.log('updateProfile: Updating aboutMe from', userToUpdate.aboutMe, 'to', aboutMe);
+                userToUpdate.aboutMe = aboutMe;
+            }
         } else if (userToUpdate.role === 'Patient') {
-            userToUpdate.bloodType = bloodType;
+            if (bloodType !== undefined) {
+                console.log('updateProfile: Updating bloodType from', userToUpdate.bloodType, 'to', bloodType);
+                userToUpdate.bloodType = bloodType;
+            }
         }
 
+        console.log('Saving user data:', userToUpdate);
         await userToUpdate.save();
+        console.log('User data saved successfully');
 
         // Return the complete updated user data
         res.json({

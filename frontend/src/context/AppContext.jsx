@@ -106,6 +106,17 @@ export const AppContextProvider = (props) => {
             if (data.success) {
                 console.log('AppContext: Setting user data:', data.userData);
                 setUserData(data.userData)
+                
+                // Also update localStorage if it's being used
+                if (useLocalStorage) {
+                    try {
+                        localStorage.setItem('vhealpoints_user', JSON.stringify(data.userData));
+                        console.log('AppContext: User data updated in localStorage from getUserData');
+                    } catch (error) {
+                        console.error('AppContext: Error updating user data in localStorage:', error);
+                    }
+                }
+                
                 return data.userData
             } else {
                 console.log('AppContext: User data fetch failed:', data.message);
@@ -251,12 +262,31 @@ export const AppContextProvider = (props) => {
         }
     };
 
+    // Function to update user data and localStorage
+    const updateUserData = (newUserData) => {
+        console.log('AppContext: Updating user data:', newUserData);
+        setUserData(newUserData);
+        
+        // Also update localStorage if it's being used
+        if (useLocalStorage) {
+            try {
+                localStorage.setItem('vhealpoints_user', JSON.stringify(newUserData));
+                console.log('AppContext: User data updated in localStorage');
+            } catch (error) {
+                console.error('AppContext: Error updating user data in localStorage:', error);
+            }
+        } else {
+            console.log('AppContext: Not using localStorage, only updating state');
+        }
+    };
+
     const value = {
         backendUrl,
         isLoggedIn,
         setIsLoggedIn,
         userData,
         setUserData,
+        updateUserData,
         getUserData,
         logout,
         isLoading,
