@@ -149,11 +149,26 @@ const DoctorSlotsModal = ({ doctor, showModal, onClose, onSlotsUpdate }) => {
             const isOngoing = isAppointmentOngoing(date, startTime, endTime);
 
             // Allow modification if the slot is ongoing or hasn't started yet
-            const yyyyMmDd = new Date(date).toISOString().split('T')[0];
-            const start = new Date(`${yyyyMmDd}T${startTime}:00+07:00`);
+            const slotDate = new Date(date);
             const now = new Date();
-
-            return isOngoing || now < start;
+            
+            // Reset time to start of day for date comparison
+            const slotDateOnly = new Date(slotDate.getFullYear(), slotDate.getMonth(), slotDate.getDate());
+            const nowDateOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            
+            // If slot is in the future, allow modification
+            if (slotDateOnly > nowDateOnly) {
+                return true;
+            }
+            
+            // If slot is today, check if it's ongoing or hasn't started
+            if (slotDateOnly.getTime() === nowDateOnly.getTime()) {
+                const start = new Date(`${date}T${startTime}:00`);
+                return isOngoing || now < start;
+            }
+            
+            // If slot is in the past, don't allow modification
+            return false;
         } catch (error) {
             console.error('Error checking slot modification:', error);
             return false;
