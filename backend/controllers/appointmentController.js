@@ -1318,10 +1318,11 @@ export const deleteSlotAdmin = async (req, res) => {
 
         // Check if slot is in the past
         const slotDate = new Date(slot.date);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const now = new Date();
+        const slotDateMidnight = new Date(slotDate.getFullYear(), slotDate.getMonth(), slotDate.getDate());
+        const nowMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-        if (slotDate < today) {
+        if (slotDateMidnight < nowMidnight) {
             return res.status(400).json({
                 success: false,
                 message: 'Cannot delete past slots'
