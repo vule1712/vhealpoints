@@ -1500,39 +1500,80 @@ const MS_PER_DAY = 24 * MS_PER_HOUR;
 
 const sendAppointmentReminders = async () => {
     try {
+        console.log('Running appointment reminder check...');
         const now = new Date();
         const oneDayLater = new Date(now.getTime() + MS_PER_DAY);
         const startWindow = new Date(oneDayLater.getTime() - MS_PER_HOUR); // 1 hour window before 24h
         const endWindow = new Date(oneDayLater.getTime() + MS_PER_HOUR);   // 1 hour window after 24h
 
-        // Find all confirmed appointments with slot date in the window and not already reminded
+        console.log('Checking for appointments between:', startWindow, 'and', endWindow);
+
+        // Find all confirmed appointments
         const appointments = await appointmentModel.find({ status: 'Confirmed' })
             .populate('slotId')
             .populate('doctorId', 'name email')
             .populate('patientId', 'name email');
 
+        console.log('Found', appointments.length, 'confirmed appointments');
+
         for (const appointment of appointments) {
-            if (!appointment.slotId || !appointment.slotId.date) continue;
-            const slotDate = new Date(appointment.slotId.date);
-            // Combine date and startTime
-            let [startHour, startMinute] = [0, 0];
+            if (!appointment.slotId || !appointment.slotId.date) {
+                console.log('Skipping appointment without slot or date:', appointment._id);
+                continue;
+            }
+
+            console.log('Processing appointment:', appointment._id);
+            console.log('Slot date:', appointment.slotId.date);
+            console.log('Slot start time:', appointment.slotId.startTime);
+
+            // Parse the slot date
+            let slotDate;
+            if (typeof appointment.slotId.date === 'string') {
+                // If it's a string in dd/MM/yyyy format, parse it
+                const [day, month, year] = appointment.slotId.date.split('/');
+                slotDate = new Date(year, month - 1, day);
+            } else {
+                slotDate = new Date(appointment.slotId.date);
+            }
+
+            // Parse the start time (12-hour format like "09:00 AM")
+            let startHour = 0, startMinute = 0;
             if (appointment.slotId.startTime) {
-                const timeMatch = appointment.slotId.startTime.match(/(\d+):(\d+)/);
+                const timeMatch = appointment.slotId.startTime.match(/(\d+):(\d+) (AM|PM)/);
                 if (timeMatch) {
                     startHour = parseInt(timeMatch[1], 10);
-                    startMinute = parseInt(timeMatch[2], 10);
+                    const minutes = parseInt(timeMatch[2], 10);
+                    const period = timeMatch[3];
+                    
+                    if (period === 'PM' && startHour !== 12) {
+                        startHour += 12;
+                    } else if (period === 'AM' && startHour === 12) {
+                        startHour = 0;
+                    }
+                    startMinute = minutes;
                 }
             }
+
             slotDate.setHours(startHour, startMinute, 0, 0);
+            console.log('Calculated appointment time:', slotDate);
+
             if (slotDate >= startWindow && slotDate <= endWindow) {
-                // Check if already reminded (add a field or use notification existence)
+                console.log('Appointment is within reminder window, sending reminders...');
+                
+                // Check if already reminded
                 const existingNotif = await notificationModel.findOne({
                     userId: appointment.patientId._id,
                     type: 'reminder',
                     targetId: appointment._id
                 });
-                if (existingNotif) continue;
+                
+                if (existingNotif) {
+                    console.log('Reminder already sent for appointment:', appointment._id);
+                    continue;
+                }
+
                 // Send email to patient
+                console.log('Sending reminder email to patient:', appointment.patientId.email);
                 await sendAppointmentReminderEmail(
                     appointment.patientId.email,
                     appointment.patientId.name,
@@ -1541,7 +1582,9 @@ const sendAppointmentReminders = async () => {
                     appointment.doctorId.name,
                     'Patient'
                 );
+
                 // Send email to doctor
+                console.log('Sending reminder email to doctor:', appointment.doctorId.email);
                 await sendAppointmentReminderEmail(
                     appointment.doctorId.email,
                     appointment.doctorId.name,
@@ -1550,6 +1593,7 @@ const sendAppointmentReminders = async () => {
                     appointment.patientId.name,
                     'Doctor'
                 );
+
                 // Create notification for patient
                 const notifPatient = new notificationModel({
                     userId: appointment.patientId._id,
@@ -1558,6 +1602,7 @@ const sendAppointmentReminders = async () => {
                     targetId: appointment._id
                 });
                 await notifPatient.save();
+
                 // Create notification for doctor
                 const notifDoctor = new notificationModel({
                     userId: appointment.doctorId._id,
@@ -1566,12 +1611,21 @@ const sendAppointmentReminders = async () => {
                     targetId: appointment._id
                 });
                 await notifDoctor.save();
+
                 // Real-time notification (if online)
-                const { io, userSocketMap } = require('../socket.js');
-                const patientSocketId = userSocketMap[appointment.patientId._id.toString()];
-                if (patientSocketId) io.to(patientSocketId).emit('notification', notifPatient);
-                const doctorSocketId = userSocketMap[appointment.doctorId._id.toString()];
-                if (doctorSocketId) io.to(doctorSocketId).emit('notification', notifDoctor);
+                try {
+                    const { io, userSocketMap } = require('../socket.js');
+                    const patientSocketId = userSocketMap[appointment.patientId._id.toString()];
+                    if (patientSocketId) io.to(patientSocketId).emit('notification', notifPatient);
+                    const doctorSocketId = userSocketMap[appointment.doctorId._id.toString()];
+                    if (doctorSocketId) io.to(doctorSocketId).emit('notification', notifDoctor);
+                } catch (socketError) {
+                    console.log('Socket notification failed:', socketError.message);
+                }
+
+                console.log('Reminders sent successfully for appointment:', appointment._id);
+            } else {
+                console.log('Appointment not in reminder window:', slotDate);
             }
         }
     } catch (error) {
@@ -1579,4 +1633,3 @@ const sendAppointmentReminders = async () => {
     }
 };
 setInterval(sendAppointmentReminders, 60 * 60 * 1000); // Run every hour
-// --- End Appointment Reminder Scheduler --- 
