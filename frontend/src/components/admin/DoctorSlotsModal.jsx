@@ -544,7 +544,7 @@ const DoctorSlotsModal = ({ doctor, showModal, onClose, onSlotsUpdate }) => {
             
             {/* Delete Confirmation Modal */}
             <DeleteConfirmationModal
-                show={showDeleteModal}
+                showModal={showDeleteModal}
                 onClose={() => {
                     setShowDeleteModal(false);
                     setSlotToDelete(null);
