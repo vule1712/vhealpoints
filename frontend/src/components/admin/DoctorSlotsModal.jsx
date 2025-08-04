@@ -122,14 +122,9 @@ const DoctorSlotsModal = ({ doctor, showModal, onClose, onSlotsUpdate }) => {
         try {
             if (slot.isBooked) return false;
 
-            console.log('Slot date format:', slot.date);
-            console.log('Slot date type:', typeof slot.date);
-
             // Parse the date string (which is in dd/MM/yyyy format)
             const [day, month, year] = slot.date.split('/');
             const date = `${year}-${month}-${day}`;
-            
-            console.log('Parsed date:', date);
 
             // Convert time from 12-hour format to 24-hour format if needed
             const convertTo24Hour = (time12h) => {
@@ -157,35 +152,22 @@ const DoctorSlotsModal = ({ doctor, showModal, onClose, onSlotsUpdate }) => {
             const slotDate = new Date(date);
             const now = new Date();
             
-            console.log('Slot date object:', slotDate);
-            console.log('Current date object:', now);
-            console.log('Slot date timestamp:', slotDate.getTime());
-            console.log('Current date timestamp:', now.getTime());
-            
             // Reset time to start of day for date comparison
             const slotDateOnly = new Date(slotDate.getFullYear(), slotDate.getMonth(), slotDate.getDate());
             const nowDateOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             
-            console.log('Slot date only:', slotDateOnly);
-            console.log('Current date only:', nowDateOnly);
-            console.log('Slot date only timestamp:', slotDateOnly.getTime());
-            console.log('Current date only timestamp:', nowDateOnly.getTime());
-            
             // If slot is in the future, allow modification
             if (slotDateOnly > nowDateOnly) {
-                console.log('Slot is in the future - allowing modification');
                 return true;
             }
             
             // If slot is today, check if it's ongoing or hasn't started
             if (slotDateOnly.getTime() === nowDateOnly.getTime()) {
-                console.log('Slot is today - checking if ongoing or not started');
                 const start = new Date(`${date}T${startTime}:00`);
                 return isOngoing || now < start;
             }
             
             // If slot is in the past, don't allow modification
-            console.log('Slot is in the past - not allowing modification');
             return false;
         } catch (error) {
             console.error('Error checking slot modification:', error);
@@ -307,6 +289,7 @@ const DoctorSlotsModal = ({ doctor, showModal, onClose, onSlotsUpdate }) => {
 
     const confirmDeleteSlot = async () => {
         try {
+            console.log('Attempting to delete slot:', slotToDelete._id);
             const response = await axios.delete(
                 `${backendUrl}/api/appointments/admin/slot/${slotToDelete._id}`,
                 { withCredentials: true }
@@ -321,6 +304,8 @@ const DoctorSlotsModal = ({ doctor, showModal, onClose, onSlotsUpdate }) => {
             }
         } catch (error) {
             console.error('Error deleting slot:', error);
+            console.error('Error response data:', error.response?.data);
+            console.error('Error status:', error.response?.status);
             toast.error(error.response?.data?.message || 'Failed to delete slot');
         }
     };
