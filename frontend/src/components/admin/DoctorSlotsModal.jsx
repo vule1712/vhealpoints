@@ -541,6 +541,18 @@ const DoctorSlotsModal = ({ doctor, showModal, onClose, onSlotsUpdate }) => {
                 )}
                 </div>
             </div>
+            
+            {/* Delete Confirmation Modal */}
+            <DeleteConfirmationModal
+                show={showDeleteModal}
+                onClose={() => {
+                    setShowDeleteModal(false);
+                    setSlotToDelete(null);
+                }}
+                onConfirm={confirmDeleteSlot}
+                title="Delete Slot"
+                message={`Are you sure you want to delete the slot on ${slotToDelete ? formatDateTime(slotToDelete.date) : ''} from ${slotToDelete ? formatTime(slotToDelete.startTime) : ''} to ${slotToDelete ? formatTime(slotToDelete.endTime) : ''}?`}
+            />
         </div>
     );
 };
