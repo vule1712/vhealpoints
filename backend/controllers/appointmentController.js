@@ -1316,18 +1316,7 @@ export const deleteSlotAdmin = async (req, res) => {
             });
         }
 
-        // Check if slot is in the past
-        const slotDate = new Date(slot.date);
-        const now = new Date();
-        const slotDateMidnight = new Date(slotDate.getFullYear(), slotDate.getMonth(), slotDate.getDate());
-        const nowMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-        if (slotDateMidnight < nowMidnight) {
-            return res.status(400).json({
-                success: false,
-                message: 'Cannot delete past slots'
-            });
-        }
 
         await availableSlotModel.findByIdAndDelete(slotId);
 
