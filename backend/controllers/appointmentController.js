@@ -5,7 +5,6 @@ import notificationModel from '../models/notificationModel.js';
 import { getIO, getUserSocketMap, emitAdminDashboardUpdate, emitDoctorDashboardUpdate, emitPatientDashboardUpdate } from '../socket.js';
 import { sendAppointmentReminderEmail } from '../config/nodemailer.js';
 import { isToday } from 'date-fns';
-import { zonedTimeToUtc, utcToZonedTime } from 'date-fns-tz';
 
 // Helper function to convert 12-hour time to 24-hour time for comparison
 const convertTo24Hour = (time12h) => {
@@ -67,28 +66,25 @@ const checkAndUpdateAppointmentStatus = async (appointment) => {
 
             // Get the raw date from the slot (before getter transformation)
             const rawSlot = await availableSlotModel.findById(appointment.slotId).lean();
-            // Use the slot date as a Date object (should be UTC in DB)
-            let slotDate = new Date(rawSlot.date);
-
+            const slotDate = new Date(rawSlot.date);
+            
             // Get the end time in 24-hour format
             const [endHours, endMinutes] = convertTo24Hour(slot.endTime).split(':');
-
-            // Set the hours and minutes for the appointment end time in the local timezone
-            // Convert slotDate to local time
-            let localSlotDate = utcToZonedTime(slotDate, TIMEZONE);
-            // Set the end time in local time
-            localSlotDate.setHours(parseInt(endHours), parseInt(endMinutes), 0, 0);
-            // Convert back to UTC for comparison
-            const appointmentEndUtc = zonedTimeToUtc(localSlotDate, TIMEZONE);
-
-            const currentTime = new Date(); // This is in UTC
-
-            // Compare current time (UTC) with appointment end time (UTC)
-            if (currentTime >= appointmentEndUtc) {
+            
+            // Create appointment end time in local timezone (GMT+7)
+            const appointmentEndTime = new Date(slotDate);
+            appointmentEndTime.setHours(parseInt(endHours), parseInt(endMinutes), 0, 0);
+            
+            // Get current time in local timezone (GMT+7)
+            const now = new Date();
+            const currentTimeLocal = new Date(now.getTime() + (7 * 60 * 60 * 1000)); // Add 7 hours for GMT+7
+            
+            // Compare current time with appointment end time
+            if (currentTimeLocal >= appointmentEndTime) {
                 console.log('Updating appointment status to Completed:', {
                     appointmentId: appointment._id,
-                    currentTime: currentTime.toISOString(),
-                    appointmentEndTime: appointmentEndUtc.toISOString()
+                    currentTime: currentTimeLocal.toISOString(),
+                    appointmentEndTime: appointmentEndTime.toISOString()
                 });
                 
                 const updatedAppointment = await appointmentModel.findByIdAndUpdate(
@@ -1502,7 +1498,6 @@ export const updateDoctorComment = async (req, res) => {
 // --- Appointment Reminder Scheduler ---
 const MS_PER_HOUR = 60 * 60 * 1000;
 const MS_PER_DAY = 24 * MS_PER_HOUR;
-const TIMEZONE = 'Asia/Ho_Chi_Minh'; // GMT+7
 
 const sendAppointmentReminders = async () => {
     try {
