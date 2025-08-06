@@ -81,6 +81,14 @@ const UserProfilePage = () => {
                 targetUserId: userId // Add the target user ID for admin updates
             };
             
+            // Add name and phone updates for all users
+            if (editedUser.name !== user.name) {
+                profileData.name = editedUser.name;
+            }
+            if (editedUser.phone !== user.phone) {
+                profileData.phone = editedUser.phone;
+            }
+            
             if (editedUser.role === 'Doctor') {
                 profileData.specialization = editedUser.specialization;
                 profileData.clinicName = editedUser.clinicName;
@@ -181,7 +189,18 @@ const UserProfilePage = () => {
                                 <div className="space-y-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-600">Name</label>
-                                        <div className="mt-1 text-gray-900">{user.name}</div>
+                                        {isEditing ? (
+                                            <input
+                                                type="text"
+                                                name="name"
+                                                value={editedUser?.name || ''}
+                                                onChange={handleInputChange}
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                                placeholder="Enter name"
+                                            />
+                                        ) : (
+                                            <div className="mt-1 text-gray-900">{user.name}</div>
+                                        )}
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-600">Email</label>
