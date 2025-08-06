@@ -66,30 +66,13 @@ const checkAndUpdateAppointmentStatus = async (appointment) => {
 
             // Get the raw date from the slot (before getter transformation)
             const rawSlot = await availableSlotModel.findById(appointment.slotId).lean();
+            const appointmentDate = new Date(rawSlot.date);
             
-            // Debug logging to understand the data type
-            console.log('Raw slot date type:', typeof rawSlot.date, 'Value:', rawSlot.date);
-            
-            // Create appointment end time by combining date and time properly
+            // Get the end time in 24-hour format
             const [endHours, endMinutes] = convertTo24Hour(slot.endTime).split(':');
             
-            // Create the appointment end time in local timezone
-            // Handle both string and Date object cases
-            let appointmentDate;
-            try {
-                if (typeof rawSlot.date === 'string') {
-                    // If it's a string, parse it
-                    const [year, month, day] = rawSlot.date.split('T')[0].split('-');
-                    appointmentDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(endHours), parseInt(endMinutes), 0, 0);
-                } else {
-                    // If it's a Date object, create a new date with the same components
-                    const dateObj = new Date(rawSlot.date);
-                    appointmentDate = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), parseInt(endHours), parseInt(endMinutes), 0, 0);
-                }
-            } catch (error) {
-                console.error('Error parsing appointment date:', error, 'Raw date:', rawSlot.date);
-                return appointment; // Skip this appointment if date parsing fails
-            }
+            // Set the hours and minutes for the appointment end time
+            appointmentDate.setHours(parseInt(endHours), parseInt(endMinutes), 0, 0);
             
             const currentTime = new Date();
             
@@ -98,10 +81,7 @@ const checkAndUpdateAppointmentStatus = async (appointment) => {
                 console.log('Updating appointment status to Completed:', {
                     appointmentId: appointment._id,
                     currentTime: currentTime.toISOString(),
-                    currentTimeLocal: currentTime.toString(),
-                    appointmentEndTime: appointmentDate.toISOString(),
-                    appointmentEndTimeLocal: appointmentDate.toString(),
-                    timeDifference: currentTime.getTime() - appointmentDate.getTime()
+                    appointmentEndTime: appointmentDate.toISOString()
                 });
                 
                 const updatedAppointment = await appointmentModel.findByIdAndUpdate(
@@ -319,16 +299,7 @@ function timeStringToMinutes(time) {
 function isSlotInFutureOrOngoing(date, startTime, endTime) {
     // date: Date object or string
     // startTime, endTime: 'HH:mm' or 'hh:mm AM/PM'
-    
-    // Parse the date properly to avoid timezone issues
-    let dateObj;
-    if (typeof date === 'string') {
-        const [year, month, day] = date.split('T')[0].split('-');
-        dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-    } else {
-        dateObj = new Date(date);
-    }
-    
+    const yyyyMmDd = new Date(date).toISOString().split('T')[0];
     // Convert to 24-hour format if needed
     function to24(time) {
         if (time.includes('AM') || time.includes('PM')) {
@@ -341,11 +312,8 @@ function isSlotInFutureOrOngoing(date, startTime, endTime) {
         }
         return time;
     }
-    
-    const startTime24 = to24(startTime);
-    const [startHours, startMinutes] = startTime24.split(':');
-    const start = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), parseInt(startHours), parseInt(startMinutes), 0, 0);
-    
+    const start = new Date(`${yyyyMmDd}T${to24(startTime)}`);
+    const end = new Date(`${yyyyMmDd}T${to24(endTime)}`);
     const now = new Date();
     return now < start;
 }
@@ -689,37 +657,17 @@ export const getAvailableSlots = async (req, res) => {
 
         // Format the slots and check if they're in the past
         const formattedSlots = availableSlots.map(slot => {
-            // Parse the date properly to avoid timezone issues
-            let slotDate;
-            try {
-                if (typeof slot.date === 'string') {
-                    const [year, month, day] = slot.date.split('T')[0].split('-');
-                    slotDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-                } else {
-                    // If it's a Date object, create a new date with the same components
-                    const dateObj = new Date(slot.date);
-                    slotDate = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate());
-                }
-                
-                const [hours, minutes] = convertTo24Hour(slot.startTime).split(':');
-                slotDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-                
-                const isPastSlot = slotDate <= new Date();
+            const slotDate = new Date(slot.date);
+            const [hours, minutes] = convertTo24Hour(slot.startTime).split(':');
+            slotDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+            
+            const isPastSlot = slotDate <= new Date();
 
-                return {
-                    ...slot.toObject(),
-                    date: slot.date,
-                    isPastSlot
-                };
-            } catch (error) {
-                console.error('Error parsing slot date:', error, 'Slot date:', slot.date);
-                // Return slot with isPastSlot as false if parsing fails
-                return {
-                    ...slot.toObject(),
-                    date: slot.date,
-                    isPastSlot: false
-                };
-            }
+            return {
+                ...slot.toObject(),
+                date: slot.date,
+                isPastSlot
+            };
         });
 
         res.json({
@@ -1576,22 +1524,14 @@ const sendAppointmentReminders = async () => {
             console.log('Slot date:', appointment.slotId.date);
             console.log('Slot start time:', appointment.slotId.startTime);
 
-            // Parse the slot date properly to avoid timezone issues
+            // Parse the slot date
             let slotDate;
             if (typeof appointment.slotId.date === 'string') {
                 // If it's a string in dd/MM/yyyy format, parse it
-                if (appointment.slotId.date.includes('/')) {
-                    const [day, month, year] = appointment.slotId.date.split('/');
-                    slotDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-                } else {
-                    // If it's in ISO format (YYYY-MM-DD), parse it
-                    const [year, month, day] = appointment.slotId.date.split('T')[0].split('-');
-                    slotDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-                }
+                const [day, month, year] = appointment.slotId.date.split('/');
+                slotDate = new Date(year, month - 1, day);
             } else {
-                // If it's a Date object, create a new date with the same components
-                const dateObj = new Date(appointment.slotId.date);
-                slotDate = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate());
+                slotDate = new Date(appointment.slotId.date);
             }
 
             // Parse the start time (12-hour format like "09:00 AM")
