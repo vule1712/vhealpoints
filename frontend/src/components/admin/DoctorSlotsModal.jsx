@@ -178,8 +178,8 @@ const DoctorSlotsModal = ({ doctor, showModal, onClose, onSlotsUpdate }) => {
     // Helper function to check if an appointment is ongoing
     const isAppointmentOngoing = (date, startTime, endTime) => {
         const yyyyMmDd = new Date(date).toISOString().split('T')[0];
-        const start = new Date(`${yyyyMmDd}T${startTime}:00+07:00`);
-        const end = new Date(`${yyyyMmDd}T${endTime}:00+07:00`);
+        const start = new Date(`${yyyyMmDd}T${startTime}`);
+        const end = new Date(`${yyyyMmDd}T${endTime}`);
         const now = new Date();
 
         return now >= start && now <= end;
