@@ -64,19 +64,14 @@ const checkAndUpdateAppointmentStatus = async (appointment) => {
             const slot = await availableSlotModel.findById(appointment.slotId);
             if (!slot) return appointment;
 
-            // Get the raw date from the slot (before getter transformation)
-            const rawSlot = await availableSlotModel.findById(appointment.slotId).lean();
-            const appointmentDate = new Date(rawSlot.date);
-            
+            // Use the raw Date object from MongoDB
+            const appointmentDate = new Date(slot.date);
             // Get the end time in 24-hour format
             const [endHours, endMinutes] = convertTo24Hour(slot.endTime).split(':');
-            
             // Set the hours and minutes for the appointment end time
             appointmentDate.setHours(parseInt(endHours), parseInt(endMinutes), 0, 0);
-            
             // Get current time
             const currentTime = new Date();
-            
             // Compare current time with appointment end time
             if (currentTime >= appointmentDate) {
                 console.log('Updating appointment status to Completed:', {
@@ -84,16 +79,13 @@ const checkAndUpdateAppointmentStatus = async (appointment) => {
                     currentTime: currentTime.toISOString(),
                     appointmentEndTime: appointmentDate.toISOString()
                 });
-                
                 // Use findByIdAndUpdate to ensure atomic operation
                 const updatedAppointment = await appointmentModel.findByIdAndUpdate(
                     appointment._id,
                     { status: 'Completed' },
                     { new: true }
                 ).populate('doctorId').populate('patientId');
-                
                 appointment.status = 'Completed';
-
                 if (updatedAppointment) {
                     const io = getIO();
                     const userSocketMap = getUserSocketMap();
