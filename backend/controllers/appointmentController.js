@@ -75,9 +75,8 @@ const checkAndUpdateAppointmentStatus = async (appointment) => {
             const appointmentEndTime = new Date(slotDate);
             appointmentEndTime.setHours(parseInt(endHours), parseInt(endMinutes), 0, 0);
             
-            // Get current time in local timezone (GMT+7)
             const now = new Date();
-            const currentTimeLocal = new Date(now.getTime() + (7 * 60 * 60 * 1000)); // Add 7 hours for GMT+7
+            const currentTimeLocal = new Date(now.getTime() + (7 * 60 * 60 * 1000)); // GMT+7
             
             // Compare current time with appointment end time
             if (currentTimeLocal >= appointmentEndTime) {
@@ -140,6 +139,76 @@ const checkAndUpdateAppointmentStatus = async (appointment) => {
     } catch (error) {
         console.error('Error checking appointment status:', error);
         return appointment;
+    }
+};
+
+// Helper functions for dashboard stats
+const getPatientStats = async (patientId) => {
+    try {
+        const appointments = await appointmentModel.find({ patientId }).populate('slotId');
+        return {
+            totalAppointments: appointments.length,
+            todayAppointments: appointments.filter(apt => {
+                if (!apt.slotId?.date) return false;
+                const [day, month, year] = apt.slotId.date.split('/');
+                const appointmentDate = new Date(year, month - 1, day);
+                return isToday(appointmentDate);
+            }).length,
+            confirmedAppointments: appointments.filter(apt => apt.status === 'Confirmed').length,
+            completedAppointments: appointments.filter(apt => apt.status === 'Completed').length
+        };
+    } catch (error) {
+        console.error('Error getting patient stats:', error);
+        return { totalAppointments: 0, todayAppointments: 0, confirmedAppointments: 0, completedAppointments: 0 };
+    }
+};
+
+const getDoctorStats = async (doctorId) => {
+    try {
+        const appointments = await appointmentModel.find({ doctorId }).populate('slotId');
+        return {
+            totalAppointments: appointments.length,
+            todayAppointments: appointments.filter(apt => {
+                if (!apt.slotId?.date) return false;
+                const [day, month, year] = apt.slotId.date.split('/');
+                const appointmentDate = new Date(year, month - 1, day);
+                return isToday(appointmentDate);
+            }).length,
+            confirmedAppointments: appointments.filter(apt => apt.status === 'Confirmed').length,
+            completedAppointments: appointments.filter(apt => apt.status === 'Completed').length
+        };
+    } catch (error) {
+        console.error('Error getting doctor stats:', error);
+        return { totalAppointments: 0, todayAppointments: 0, confirmedAppointments: 0, completedAppointments: 0 };
+    }
+};
+
+const getAdminStats = async () => {
+    try {
+        const allAppointments = await appointmentModel.find().populate('slotId');
+        const totalUsers = await userModel.countDocuments();
+        const verifiedUsers = await userModel.countDocuments({ isVerified: true });
+        const doctors = await userModel.countDocuments({ role: 'doctor' });
+        const patients = await userModel.countDocuments({ role: 'patient' });
+
+        return {
+            totalAppointments: allAppointments.length,
+            todayAppointments: allAppointments.filter(apt => {
+                if (!apt.slotId?.date) return false;
+                const [day, month, year] = apt.slotId.date.split('/');
+                const appointmentDate = new Date(year, month - 1, day);
+                return isToday(appointmentDate);
+            }).length,
+            confirmedAppointments: allAppointments.filter(apt => apt.status === 'Confirmed').length,
+            completedAppointments: allAppointments.filter(apt => apt.status === 'Completed').length,
+            totalUsers,
+            verifiedUsers,
+            doctors,
+            patients
+        };
+    } catch (error) {
+        console.error('Error getting admin stats:', error);
+        return { totalAppointments: 0, todayAppointments: 0, confirmedAppointments: 0, completedAppointments: 0, totalUsers: 0, verifiedUsers: 0, doctors: 0, patients: 0 };
     }
 };
 
@@ -1615,7 +1684,8 @@ const sendAppointmentReminders = async () => {
 
                 // Real-time notification (if online)
                 try {
-                    const { io, userSocketMap } = require('../socket.js');
+                    const io = getIO();
+                    const userSocketMap = getUserSocketMap();
                     const patientSocketId = userSocketMap[appointment.patientId._id.toString()];
                     if (patientSocketId) io.to(patientSocketId).emit('notification', notifPatient);
                     const doctorSocketId = userSocketMap[appointment.doctorId._id.toString()];
