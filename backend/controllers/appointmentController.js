@@ -106,12 +106,16 @@ const checkAndUpdateAppointmentStatus = async (appointment) => {
                         targetId: updatedAppointment._id,
                     });
                     await notificationToPatient.save();
-                    const patientSocketId = userSocketMap[updatedAppointment.patientId._id.toString()];
-                    if (patientSocketId) {
-                        io.to(patientSocketId).emit('notification', notificationToPatient);
+                    
+                    // Use the emitToUser function from socket.js to send to all patient's sockets
+                    const patientId = updatedAppointment.patientId._id.toString();
+                    if (userSocketMap[patientId] && userSocketMap[patientId].length > 0) {
+                        userSocketMap[patientId].forEach(socketId => {
+                            io.to(socketId).emit('notification', notificationToPatient);
+                        });
                         // Also emit patient dashboard update with latest stats
                         const patientStats = await getPatientStats(updatedAppointment.patientId._id);
-                        emitPatientDashboardUpdate(updatedAppointment.patientId._id.toString(), patientStats);
+                        emitPatientDashboardUpdate(patientId, patientStats);
                     }
                     // Notify doctor
                     const messageToDoctor = `Your appointment with patient ${updatedAppointment.patientId.name} has been completed.`;
@@ -122,12 +126,16 @@ const checkAndUpdateAppointmentStatus = async (appointment) => {
                         targetId: updatedAppointment._id,
                     });
                     await notificationToDoctor.save();
-                    const doctorSocketId = userSocketMap[updatedAppointment.doctorId._id.toString()];
-                    if (doctorSocketId) {
-                        io.to(doctorSocketId).emit('notification', notificationToDoctor);
+                    
+                    // Use the emitToUser function from socket.js to send to all doctor's sockets
+                    const doctorId = updatedAppointment.doctorId._id.toString();
+                    if (userSocketMap[doctorId] && userSocketMap[doctorId].length > 0) {
+                        userSocketMap[doctorId].forEach(socketId => {
+                            io.to(socketId).emit('notification', notificationToDoctor);
+                        });
                         // Also emit doctor dashboard update with latest stats
                         const doctorStats = await getDoctorStats(updatedAppointment.doctorId._id);
-                        emitDoctorDashboardUpdate(updatedAppointment.doctorId._id.toString(), doctorStats);
+                        emitDoctorDashboardUpdate(doctorId, doctorStats);
                     }
                     // Emit admin dashboard update with latest stats
                     const adminStats = await getAdminStats();
@@ -1572,7 +1580,8 @@ const sendAppointmentReminders = async () => {
     try {
         console.log('Running appointment reminder check...');
         const now = new Date();
-        const oneDayLater = new Date(now.getTime() + MS_PER_DAY);
+        const currentTimeLocal = new Date(now.getTime() + (7 * 60 * 60 * 1000)); // GMT+7
+        const oneDayLater = new Date(currentTimeLocal.getTime() + MS_PER_DAY);
         const startWindow = new Date(oneDayLater.getTime() - MS_PER_HOUR); // 1 hour window before 24h
         const endWindow = new Date(oneDayLater.getTime() + MS_PER_HOUR);   // 1 hour window after 24h
 
@@ -1624,10 +1633,11 @@ const sendAppointmentReminders = async () => {
                 }
             }
 
-            slotDate.setHours(startHour, startMinute, 0, 0);
-            console.log('Calculated appointment time:', slotDate);
+            // Create appointment time in local timezone (GMT+7)
+            const appointmentTime = new Date(slotDate);
+            appointmentTime.setHours(startHour, startMinute, 0, 0);
 
-            if (slotDate >= startWindow && slotDate <= endWindow) {
+            if (appointmentTime >= startWindow && appointmentTime <= endWindow) {
                 console.log('Appointment is within reminder window, sending reminders...');
                 
                 // Check if already reminded
