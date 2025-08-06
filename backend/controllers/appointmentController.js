@@ -314,8 +314,8 @@ function isSlotInFutureOrOngoing(date, startTime, endTime) {
         }
         return time;
     }
-    const start = new Date(`${yyyyMmDd}T${to24(startTime)}:00+07:00`);
-    const end = new Date(`${yyyyMmDd}T${to24(endTime)}:00+07:00`);
+    const start = new Date(`${yyyyMmDd}T${to24(startTime)}`);
+    const end = new Date(`${yyyyMmDd}T${to24(endTime)}`);
     const now = new Date();
     return now < start;
 }
