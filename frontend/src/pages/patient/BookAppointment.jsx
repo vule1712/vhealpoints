@@ -191,7 +191,7 @@ const BookAppointment = () => {
             return !isOngoing && now > end;
         } catch (error) {
             console.error('Error checking slot time:', error);
-            return true; // If there's an error, consider the slot as passed to be safe
+            return true;
         }
     };
 

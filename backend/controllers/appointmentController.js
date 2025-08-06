@@ -220,7 +220,6 @@ const getAdminStats = async () => {
     }
 };
 
-// Add a function to check all appointments periodically
 const checkAllAppointments = async () => {
     try {
         const appointments = await appointmentModel.find({ status: 'Confirmed' })
@@ -234,13 +233,12 @@ const checkAllAppointments = async () => {
     }
 };
 
-// Set up periodic check every minute
 setInterval(checkAllAppointments, 60000);
 
 // Helper function to calculate and emit dashboard updates
 const emitDashboardUpdates = async (appointment = null, isDeletion = false) => {
     try {
-        console.log('=== emitDashboardUpdates START ===');
+        console.log('emitDashboardUpdates START');
         console.log('emitDashboardUpdates called with appointment:', appointment ? {
             id: appointment._id,
             doctorId: appointment.doctorId,
@@ -352,14 +350,14 @@ const emitDashboardUpdates = async (appointment = null, isDeletion = false) => {
             emitPatientDashboardUpdate(appointment.patientId.toString(), patientStats);
             console.log('Sent patient dashboard update for patientId:', appointment.patientId.toString(), 'stats:', patientStats);
         }
-        console.log('=== emitDashboardUpdates END ===');
+        console.log('emitDashboardUpdates END');
     } catch (error) {
         console.error('Error emitting dashboard updates:', error);
         console.error('Error stack:', error.stack);
     }
 };
 
-// Helper: convert 12-hour or 24-hour time string to minutes since midnight
+// convert 12-hour or 24-hour time string to minutes since midnight
 function timeStringToMinutes(time) {
     if (!time) return 0;
     if (time.includes('AM') || time.includes('PM')) {
@@ -375,7 +373,7 @@ function timeStringToMinutes(time) {
     }
 }
 
-// Helper: check if a slot is ongoing or in the future (for slot creation)
+// check if a slot is ongoing or in the future (for slot creation)
 function isSlotInFutureOrOngoing(date, startTime, endTime) {
     // date: Date object or string
     // startTime, endTime: 'HH:mm' or 'hh:mm AM/PM'
@@ -398,7 +396,6 @@ function isSlotInFutureOrOngoing(date, startTime, endTime) {
     return now < start;
 }
 
-// Create a new appointment
 export const createAppointment = async (req, res) => {
     try {
         const { doctorId, slotId, notes } = req.body;
@@ -414,7 +411,6 @@ export const createAppointment = async (req, res) => {
             return res.json({ success: false, message: 'Slot is already booked' });
         }
 
-        // Create appointment
         const appointment = new appointmentModel({
             doctorId,
             patientId,

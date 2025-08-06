@@ -159,7 +159,6 @@ export const AppContextProvider = (props) => {
     }, [backendUrl])
 
     useEffect(() => {
-        // Always disconnect first to ensure a clean state
         if (socket.connected) {
             socket.disconnect();
         }

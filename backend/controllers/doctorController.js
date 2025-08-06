@@ -21,18 +21,15 @@ export const getDashboardStats = async (req, res) => {
             }
         });
 
-        // Get total patients (unique patients who have appointments)
         const uniquePatients = await Appointment.distinct('patientId', { doctorId });
         const totalPatients = uniquePatients.length;
 
-        // Get recent appointments
         const recentAppointments = await Appointment.find({ doctorId })
             .populate('patientId', 'name email')
             .populate('slotId', 'date startTime endTime')
             .sort({ createdAt: -1 })
             .limit(5);
 
-        // Get today's schedule
         const todaySchedule = await Appointment.find({
             doctorId,
             'slotId.date': {

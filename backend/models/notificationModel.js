@@ -11,10 +11,10 @@ const notificationSchema = new mongoose.Schema({
         required: true,
     },
     type: {
-        type: String, // e.g., 'appointment', 'feedback', 'rating', etc.
+        type: String,
     },
     targetId: {
-        type: mongoose.Schema.Types.ObjectId, // appointmentId, doctorId, feedbackId, etc.
+        type: mongoose.Schema.Types.ObjectId,
     },
     isRead: {
         type: Boolean,
