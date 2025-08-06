@@ -67,13 +67,29 @@ const checkAndUpdateAppointmentStatus = async (appointment) => {
             // Get the raw date from the slot (before getter transformation)
             const rawSlot = await availableSlotModel.findById(appointment.slotId).lean();
             
+            // Debug logging to understand the data type
+            console.log('Raw slot date type:', typeof rawSlot.date, 'Value:', rawSlot.date);
+            
             // Create appointment end time by combining date and time properly
             const [endHours, endMinutes] = convertTo24Hour(slot.endTime).split(':');
             
             // Create the appointment end time in local timezone
-            // Parse the date string and create a local date object
-            const [year, month, day] = rawSlot.date.split('T')[0].split('-');
-            const appointmentDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(endHours), parseInt(endMinutes), 0, 0);
+            // Handle both string and Date object cases
+            let appointmentDate;
+            try {
+                if (typeof rawSlot.date === 'string') {
+                    // If it's a string, parse it
+                    const [year, month, day] = rawSlot.date.split('T')[0].split('-');
+                    appointmentDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(endHours), parseInt(endMinutes), 0, 0);
+                } else {
+                    // If it's a Date object, create a new date with the same components
+                    const dateObj = new Date(rawSlot.date);
+                    appointmentDate = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), parseInt(endHours), parseInt(endMinutes), 0, 0);
+                }
+            } catch (error) {
+                console.error('Error parsing appointment date:', error, 'Raw date:', rawSlot.date);
+                return appointment; // Skip this appointment if date parsing fails
+            }
             
             const currentTime = new Date();
             
@@ -674,18 +690,36 @@ export const getAvailableSlots = async (req, res) => {
         // Format the slots and check if they're in the past
         const formattedSlots = availableSlots.map(slot => {
             // Parse the date properly to avoid timezone issues
-            const [year, month, day] = slot.date.split('T')[0].split('-');
-            const slotDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-            const [hours, minutes] = convertTo24Hour(slot.startTime).split(':');
-            slotDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-            
-            const isPastSlot = slotDate <= new Date();
+            let slotDate;
+            try {
+                if (typeof slot.date === 'string') {
+                    const [year, month, day] = slot.date.split('T')[0].split('-');
+                    slotDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                } else {
+                    // If it's a Date object, create a new date with the same components
+                    const dateObj = new Date(slot.date);
+                    slotDate = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate());
+                }
+                
+                const [hours, minutes] = convertTo24Hour(slot.startTime).split(':');
+                slotDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+                
+                const isPastSlot = slotDate <= new Date();
 
-            return {
-                ...slot.toObject(),
-                date: slot.date,
-                isPastSlot
-            };
+                return {
+                    ...slot.toObject(),
+                    date: slot.date,
+                    isPastSlot
+                };
+            } catch (error) {
+                console.error('Error parsing slot date:', error, 'Slot date:', slot.date);
+                // Return slot with isPastSlot as false if parsing fails
+                return {
+                    ...slot.toObject(),
+                    date: slot.date,
+                    isPastSlot: false
+                };
+            }
         });
 
         res.json({
