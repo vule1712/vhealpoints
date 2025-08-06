@@ -64,44 +64,25 @@ const checkAndUpdateAppointmentStatus = async (appointment) => {
             const slot = await availableSlotModel.findById(appointment.slotId);
             if (!slot) return appointment;
 
-            // Get the raw date from the slot and create a proper date object
-            const slotDate = new Date(slot.date);
-            
-            // Get current time
-            const currentTime = new Date();
-            
-            // Check if the appointment date is in the future 
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            
-            const appointmentDay = new Date(slotDate);
-            appointmentDay.setHours(0, 0, 0, 0);
-            
-            // If appointment is in the future, don't process it
-            if (appointmentDay.getTime() > today.getTime()) {
-                console.log('Skipping future appointment:', {
-                    appointmentId: appointment._id,
-                    appointmentDate: slotDate.toISOString(),
-                    currentDate: currentTime.toISOString(),
-                    appointmentDay: appointmentDay.toISOString(),
-                    today: today.toISOString()
-                });
-                return appointment;
-            }
+            // Get the raw date from the slot (before getter transformation)
+            const rawSlot = await availableSlotModel.findById(appointment.slotId).lean();
+            const appointmentDate = new Date(rawSlot.date);
             
             // Get the end time in 24-hour format
             const [endHours, endMinutes] = convertTo24Hour(slot.endTime).split(':');
             
-            // Create appointment end time by setting the specific date and time
-            const appointmentEndTime = new Date(slotDate);
-            appointmentEndTime.setHours(parseInt(endHours), parseInt(endMinutes), 0, 0);
+            // Set the hours and minutes for the appointment end time
+            appointmentDate.setHours(parseInt(endHours), parseInt(endMinutes), 0, 0);
+            
+            // Get current time
+            const currentTime = new Date();
             
             // Compare current time with appointment end time
-            if (currentTime >= appointmentEndTime) {
+            if (currentTime >= appointmentDate) {
                 console.log('Updating appointment status to Completed:', {
                     appointmentId: appointment._id,
                     currentTime: currentTime.toISOString(),
-                    appointmentEndTime: appointmentEndTime.toISOString()
+                    appointmentEndTime: appointmentDate.toISOString()
                 });
                 
                 // Use findByIdAndUpdate to ensure atomic operation
@@ -181,6 +162,15 @@ setInterval(checkAllAppointments, 60000);
 // Helper function to calculate and emit dashboard updates
 const emitDashboardUpdates = async (appointment = null, isDeletion = false) => {
     try {
+        console.log('=== emitDashboardUpdates START ===');
+        console.log('emitDashboardUpdates called with appointment:', appointment ? {
+            id: appointment._id,
+            doctorId: appointment.doctorId,
+            patientId: appointment.patientId,
+            status: appointment.status
+        } : 'null');
+        console.log('isDeletion:', isDeletion);
+
         // Calculate admin dashboard stats
         let allAppointments = await appointmentModel.find().populate('slotId');
         
@@ -188,6 +178,8 @@ const emitDashboardUpdates = async (appointment = null, isDeletion = false) => {
         if (isDeletion && appointment) {
             allAppointments = allAppointments.filter(apt => apt._id.toString() !== appointment._id.toString());
         }
+        
+        console.log('Total appointments found:', allAppointments.length);
         
         const adminStats = {
             totalAppointments: allAppointments.length,
@@ -214,9 +206,14 @@ const emitDashboardUpdates = async (appointment = null, isDeletion = false) => {
 
         // Emit admin dashboard update
         emitAdminDashboardUpdate(adminStats);
+        console.log('Sent admin dashboard update:', adminStats);
 
         // If we have a specific appointment, calculate role-specific updates
         if (appointment) {
+            console.log('Processing role-specific updates for appointment:', appointment._id);
+            console.log('Appointment doctorId type:', typeof appointment.doctorId, 'value:', appointment.doctorId);
+            console.log('Appointment patientId type:', typeof appointment.patientId, 'value:', appointment.patientId);
+            
             // Doctor dashboard update
             let doctorAppointments = await appointmentModel.find({ 
                 doctorId: appointment.doctorId 
@@ -226,6 +223,8 @@ const emitDashboardUpdates = async (appointment = null, isDeletion = false) => {
             if (isDeletion) {
                 doctorAppointments = doctorAppointments.filter(apt => apt._id.toString() !== appointment._id.toString());
             }
+            
+            console.log('Found doctor appointments:', doctorAppointments.length, 'for doctorId:', appointment.doctorId);
             
             const doctorStats = {
                 totalAppointments: doctorAppointments.length,
@@ -243,7 +242,9 @@ const emitDashboardUpdates = async (appointment = null, isDeletion = false) => {
             const uniquePatients = new Set(doctorAppointments.map(apt => apt.patientId.toString()));
             doctorStats.totalPatients = uniquePatients.size;
 
+            console.log('Doctor stats calculated:', doctorStats);
             emitDoctorDashboardUpdate(appointment.doctorId.toString(), doctorStats);
+            console.log('Sent doctor dashboard update for doctorId:', appointment.doctorId.toString(), 'stats:', doctorStats);
 
             // Patient dashboard update
             let patientAppointments = await appointmentModel.find({ 
@@ -254,6 +255,8 @@ const emitDashboardUpdates = async (appointment = null, isDeletion = false) => {
             if (isDeletion) {
                 patientAppointments = patientAppointments.filter(apt => apt._id.toString() !== appointment._id.toString());
             }
+            
+            console.log('Found patient appointments:', patientAppointments.length, 'for patientId:', appointment.patientId);
             
             const patientStats = {
                 totalAppointments: patientAppointments.length,
@@ -267,10 +270,14 @@ const emitDashboardUpdates = async (appointment = null, isDeletion = false) => {
                 completedAppointments: patientAppointments.filter(apt => apt.status === 'Completed').length
             };
 
+            console.log('Patient stats calculated:', patientStats);
             emitPatientDashboardUpdate(appointment.patientId.toString(), patientStats);
+            console.log('Sent patient dashboard update for patientId:', appointment.patientId.toString(), 'stats:', patientStats);
         }
+        console.log('=== emitDashboardUpdates END ===');
     } catch (error) {
-        console.error('Error in emitDashboardUpdates:', error);
+        console.error('Error emitting dashboard updates:', error);
+        console.error('Error stack:', error.stack);
     }
 };
 
