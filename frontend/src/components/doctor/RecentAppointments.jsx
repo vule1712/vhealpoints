@@ -148,7 +148,7 @@ const RecentAppointments = () => {
                             <div className="flex justify-between items-start">
                                 <div>
                                     <p className="font-medium text-gray-900">
-                                        {appointment.patientId.name}
+                                        {appointment.patientId?.name || 'Unknown Patient'}
                                     </p>
                                     <p className="text-sm text-gray-500">
                                         Patient
@@ -166,10 +166,10 @@ const RecentAppointments = () => {
                             
                             <div className="mt-2">
                                 <p className="text-sm text-gray-600">
-                                    Date: {formatDate(appointment.slotId.date)}
+                                    Date: {appointment.slotId?.date ? formatDate(appointment.slotId.date) : 'No date'}
                                 </p>
                                 <p className="text-sm text-gray-600">
-                                    Time: {formatTime(appointment.slotId.startTime)} - {formatTime(appointment.slotId.endTime)}
+                                    Time: {appointment.slotId?.startTime ? formatTime(appointment.slotId.startTime) : 'No time'} - {appointment.slotId?.endTime ? formatTime(appointment.slotId.endTime) : 'No time'}
                                 </p>
                             </div>
                         </div>

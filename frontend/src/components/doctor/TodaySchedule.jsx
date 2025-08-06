@@ -39,8 +39,8 @@ const TodaySchedule = ({ todaySchedule, onAppointmentClick, formatTime }) => {
                             <div>
                                 <p className="font-medium">{appointment.patientId?.name || 'Unknown Patient'}</p>
                                 <p className="text-sm text-gray-500">
-                                    {formatTimeDisplay(appointment.slotId?.startTime)} - 
-                                    {formatTimeDisplay(appointment.slotId?.endTime)}
+                                    {appointment.slotId?.startTime ? formatTimeDisplay(appointment.slotId.startTime) : 'No time'} - 
+                                    {appointment.slotId?.endTime ? formatTimeDisplay(appointment.slotId.endTime) : 'No time'}
                                 </p>
                             </div>
                             <span className={`px-3 py-1 rounded-full text-sm ${

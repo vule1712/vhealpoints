@@ -148,7 +148,7 @@ const RecentAppointments = () => {
                             <div className="flex justify-between items-start">
                                 <div>
                                     <p className="font-medium text-gray-900">
-                                        Dr. {appointment.doctorId.name}
+                                        Dr. {appointment.doctorId?.name || 'Unknown Doctor'}
                                     </p>
                                     <p className="text-sm text-gray-500">
                                         {appointment.doctorId.specialization}

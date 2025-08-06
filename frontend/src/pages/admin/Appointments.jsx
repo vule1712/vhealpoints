@@ -64,8 +64,8 @@ const Appointments = () => {
             .filter(app => app.doctorId) // Only include if doctorId exists
             .map(app => ({
                 id: app.doctorId._id,
-                name: app.doctorId.name,
-                specialization: app.doctorId.specialization
+                name: app.doctorId?.name || 'Unknown Doctor',
+                specialization: app.doctorId?.specialization || 'No Specialization'
             }));
         return Array.from(new Set(doctors.map(d => JSON.stringify(d))))
             .map(d => JSON.parse(d));

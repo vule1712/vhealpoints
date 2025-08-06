@@ -153,7 +153,7 @@ const RecentAppointments = () => {
                             <div className="flex justify-between items-start">
                                 <div>
                                     <p className="font-medium text-gray-900">
-                                        Dr. {appointment.doctorId.name}
+                                        Dr. {appointment.doctorId?.name || 'Unknown Doctor'}
                                     </p>
                                     <p className="text-sm text-gray-500">
                                         {appointment.doctorId.specialization}
@@ -171,7 +171,7 @@ const RecentAppointments = () => {
                             
                             <div className="mt-2">
                                 <p className="text-sm text-gray-600">
-                                    Patient: {appointment.patientId.name}
+                                    Patient: {appointment.patientId?.name || 'Unknown Patient'}
                                 </p>
                                 <p className="text-sm text-gray-600">
                                     Date: {formatDate(appointment.slotId.date)}
