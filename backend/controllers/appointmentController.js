@@ -64,28 +64,62 @@ const checkAndUpdateAppointmentStatus = async (appointment) => {
             const slot = await availableSlotModel.findById(appointment.slotId);
             if (!slot) return appointment;
 
-            // Use the raw Date object from MongoDB
-            const appointmentDate = new Date(slot.date);
-            // Get the end time in 24-hour format
-            const [endHours, endMinutes] = convertTo24Hour(slot.endTime).split(':');
-            // Set the hours and minutes for the appointment end time
-            appointmentDate.setHours(parseInt(endHours), parseInt(endMinutes), 0, 0);
+            // Get the raw date from the slot and create a proper date object
+            const slotDate = new Date(slot.date);
+            
             // Get current time
             const currentTime = new Date();
+            
+            // Check if the appointment date is in the future (not today or past)
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Start of today
+            const appointmentDay = new Date(slotDate);
+            appointmentDay.setHours(0, 0, 0, 0); // Start of appointment day
+            
+            // If appointment is in the future, don't process it
+            if (appointmentDay > today) {
+                console.log('Skipping future appointment:', {
+                    appointmentId: appointment._id,
+                    appointmentDate: slotDate.toISOString(),
+                    currentDate: currentTime.toISOString()
+                });
+                return appointment;
+            }
+            
+            // Get the end time in 24-hour format
+            const [endHours, endMinutes] = convertTo24Hour(slot.endTime).split(':');
+            
+            // Create appointment end time by setting the specific date and time
+            const appointmentEndTime = new Date(slotDate);
+            appointmentEndTime.setHours(parseInt(endHours), parseInt(endMinutes), 0, 0);
+            
+            // Add debug logging to see what's happening
+            console.log('Checking appointment status:', {
+                appointmentId: appointment._id,
+                slotDate: slotDate.toISOString(),
+                slotEndTime: slot.endTime,
+                appointmentEndTime: appointmentEndTime.toISOString(),
+                currentTime: currentTime.toISOString(),
+                isPastEndTime: currentTime >= appointmentEndTime
+            });
+            
             // Compare current time with appointment end time
-            if (currentTime >= appointmentDate) {
+            if (currentTime >= appointmentEndTime) {
                 console.log('Updating appointment status to Completed:', {
                     appointmentId: appointment._id,
                     currentTime: currentTime.toISOString(),
-                    appointmentEndTime: appointmentDate.toISOString()
+                    appointmentEndTime: appointmentEndTime.toISOString()
                 });
+                
                 // Use findByIdAndUpdate to ensure atomic operation
                 const updatedAppointment = await appointmentModel.findByIdAndUpdate(
                     appointment._id,
                     { status: 'Completed' },
                     { new: true }
                 ).populate('doctorId').populate('patientId');
+                
                 appointment.status = 'Completed';
+
                 if (updatedAppointment) {
                     const io = getIO();
                     const userSocketMap = getUserSocketMap();
